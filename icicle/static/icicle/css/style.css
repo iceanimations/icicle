@@ -1,0 +1,112 @@
+body {
+	background-color:#dddddd;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size: 12pt;
+}
+
+.container {
+	margin: 0 auto;
+	width: 60%;
+}
+
+#loginPw, #loginText {
+	border: none;
+	background-color: white;
+	border: solid 1px green;
+}
+
+#loginPw:focus, #loginText:focus {
+	box-shadow: 0 0 5px #008000;
+}
+
+
+#loginSubmit {
+	background-color: white;
+	border: solid 2px green;
+}
+
+#loginSubmit:hover {
+	background-color: #008000;
+	color: white;
+	
+}
+
+button::-moz-focus-inner {
+  border: 0;
+}
+
+
+#loginForm { 
+	background-color: white;
+	border: solid 1px #cccccc;
+	box-shadow: 0 0 10px #909090;
+}
+label {
+	text-align:right;
+	margin-right: 1em;
+}
+
+.align-right {
+	text-align: right;
+}
+
+.center {
+	margin: 0 auto;
+	width: 60%;
+}
+
+.row {
+	padding: 5px;
+	width: 100%;
+	display: flex;
+	flex-wrap: nowrap;
+	margin: 10px;
+}
+.col-1 {
+	padding: 4px;
+	width: 8.33%;
+}
+.col-2 {
+	padding: 4px;
+	width: 16.66%;
+}
+.col-3 {
+	padding: 4px;
+	width: 25%;
+}
+.col-4 {
+	padding: 4px;
+	width: 33.33%;
+}
+.col-5 {
+	padding: 4px;
+	width: 41.66%;
+}
+.col-6 {
+	padding: 4px;
+	width: 50%;
+}
+.col-7 {
+	padding: 4px;
+	width: 58.33%;
+}
+.col-8 {
+	padding: 4px;
+	width: 66.66%;
+}
+.col-9 {
+	padding: 4px;
+	width: 75%;
+}
+.col-10 {
+	padding: 4px;
+	width: 83.33%;
+}
+.col-11 {
+	padding: 4px;
+	width: 91.66%;
+}
+.col-12 {
+	padding: 4px;
+	width: 100%;
+}

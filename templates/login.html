@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Icicle</title>
+		{% load static %}
+		<link href={% static "static/icicle/css/style.css" %} type="text/css" rel="stylesheet" />
+	</head>
+	<body>
+		<div class="container">
+			<div class="row">
+				<div class="col-3"></div>
+				<div class="col-6">
+					<div class="row">
+						<form class="col-12" id="loginForm" action="login/" method="post">
+							{% csrf_token %}
+							<div class="row">
+								<label class="col-4">Username</label>
+								<input type="text" name="username" id="loginText" class="col-6"/>
+							</div>
+							<div class="row">
+								<label class="col-4">Password</label>
+								<input type="password" name="password" id="loginPw" class="col-6"/>
+							</div>
+							<div class="row">
+								<label class="col-4">Remember me</label>
+								<input type="checkbox" name="rememberMe"/>
+							</div>
+							<div class="row">
+								<div class="col-4"></div>
+								<input type="submit" value="Login" class="col-4" id="loginSubmit"/>
+							</div>
+						</form>
+					</div>
+				</div>
+				<div class="col-3"></div>
+			</div>
+		</div>
+	</body>
+</html>
