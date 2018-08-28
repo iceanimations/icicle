@@ -11,7 +11,7 @@
 				<div class="col-3"></div>
 				<div class="col-6">
 					<div class="row">
-						<form class="col-12" id="loginForm" action="login/" method="post">
+						<form class="col-12" id="loginForm" action="" method="post">
 							{% csrf_token %}
 							<div class="row">
 								<label class="col-4">Username</label>
@@ -29,6 +29,15 @@
 								<div class="col-4"></div>
 								<input type="submit" value="Login" class="col-4" id="loginSubmit"/>
 							</div>
+							{% if errors %}
+							<div class="row">
+								<div class="col-12" id="error">
+									<div class="center">
+										{{ errors.0 }}
+									</div>
+								</div>
+							</div>
+							{% endif %}
 						</form>
 					</div>
 				</div>

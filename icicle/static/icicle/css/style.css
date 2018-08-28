@@ -9,6 +9,10 @@ body {
 	width: 60%;
 }
 
+#error {
+	color: red;
+}
+
 #loginPw, #loginText {
 	border: none;
 	background-color: white;
@@ -52,15 +56,14 @@ label {
 
 .center {
 	margin: 0 auto;
-	width: 60%;
 }
 
 .row {
-	padding: 5px;
 	width: 100%;
 	display: flex;
 	flex-wrap: nowrap;
-	margin: 10px;
+	margin-top: 20px;
+	margin-bottom: 20px;
 }
 .col-1 {
 	padding: 4px;
