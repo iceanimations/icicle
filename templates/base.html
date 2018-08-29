@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>Icicle {% block title %} {% endblock %}</title>
+		{% load static %}
+	<link href={% static "static/icicle/css/style.css" %} type="text/css" rel="stylesheet" />
+	</head>
+	<body>
+		<div class="container">
+			<div class="row">
+				<div class="col-3 navbar">
+					<a href="/home" class="navbarButton">Home</a>
+				</div>
+				<div class="col-3 navbar">
+					<a href="/attendance" class="navbarButton">Attendance</a>
+				</div>
+				<div class="col-3 navbar">
+					<a href="/food" class="navbarButton">Food</a>
+				</div>
+				<div class="col-3 navbar">
+					<a href="/logout" class="navbarButton">Logout</a>
+				</div>
+			</div>
+			{% block content %} {% endblock %}
+		</div>
+	</body>
+</html>

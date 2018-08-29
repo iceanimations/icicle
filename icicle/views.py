@@ -5,16 +5,17 @@ Created on Aug 13, 2018
 '''
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
-from .ad_auth import authenticate
+from home.views import getOrCreateUser
+from . import auth
 import re
 
 
+
 def home(request):
-    if not isLoggedIn():
+    if not auth.isLoggedIn(request):
         return redirect('login/')
-    
-def isLoggedIn():
-    return False
+    else:
+        return redirect('home/')
 
 def showLoginForm(request, errors=None):
     return render(request, 'templates/login.html', context={'errors': errors})
@@ -34,20 +35,37 @@ def login(request):
             if not pm:
                 errors.append('Invalid Password. Allowed charachters: A-Z a-z 0-9')
             if um and pm:
-                userInfo = authenticate(username, password)
+                userInfo = auth.authenticate(username, password)
                 if userInfo is None:
                     errors.append('Invalid Username or Password')
                 else:
                     userInfo = userInfo[0][1]
-                    #TODO: set the cookie and redirect
-                    # check for remember me
-                    #return HttpResponse(userInfo)
+                    age = None
+                    if request.POST.get('rememberMe') == 'on':
+                        age = 365 * 24 * 60 * 60 # one year
+                    if getOrCreateUser({'username': userInfo['sAMAccountName'],
+                                        'dept': userInfo['department'],
+                                        'designation': userInfo['title'],
+                                        'name': userInfo['name']}) is None:
+                        path = '/home'
+                    else:
+                        path = request.POST.get('path', '/home')
+                    response = redirect(path)
+                    response.set_cookie('user',
+                               auth.makeSecureCookie(username),
+                               max_age=age)
+                    return response
         else:
             if not username: errors.append('Username missing')
             if not password: errors.append('Password missing')
         if errors:
             return showLoginForm(request, errors)
         
-            
-        
-        
+def logout(request):
+    if auth.isLoggedIn(request):
+        response = redirect('/login')
+        response.delete_cookie('user')
+        return response
+    else:
+        return HttpResponse('You are not logged in.')
+

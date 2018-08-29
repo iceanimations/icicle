@@ -4,6 +4,10 @@ Created on Aug 17, 2018
 @author: qurban.ali
 '''
 import ldap
+import hmac
+
+SECRET = 'ICEANIMATIONS'
+
 try:
     from . import settings
 except:
@@ -22,3 +26,25 @@ def authenticate(username=None, password=None):
         pass
     finally:
         connect.unbind()
+        
+def makeBytes(s):
+    return bytes(s, 'utf-8')
+
+def makeString(b):
+    return b.decode('utf-8')
+        
+def hashStr(s):
+    return hmac.new(makeBytes(SECRET), makeBytes(s)).hexdigest()
+
+def makeSecureCookie(s):
+    return '%s|%s'%(s, hashStr(s))
+
+def checkSecureCookie(h):
+    val = h.split('|')[0]
+    if h == makeSecureCookie(val):
+        return val
+
+def isLoggedIn(request):
+    cookie = request.COOKIES.get('user')
+    if cookie: 
+        return checkSecureCookie(cookie)

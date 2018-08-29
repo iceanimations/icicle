@@ -13,22 +13,23 @@ class Designation(models.Model):
         return self.title
 
 class Employee(models.Model):
-    code = models.IntegerField()
+    code = models.IntegerField(null=True, blank=True)
     name = models.CharField(max_length=50)
+    email = models.CharField(max_length=50, null=True, blank=True)
     photo = models.ImageField()
     username = models.CharField(max_length=50)
-    fatherName = models.CharField(max_length=50, verbose_name='Father\'s Name')
+    fatherName = models.CharField(max_length=50, verbose_name='Father\'s Name', blank=True, null=True)
     dept = models.ForeignKey('Department', null=True, blank=True, on_delete=models.CASCADE)
     shift = models.ForeignKey('attendance.Shift', null=True, blank=True, on_delete=models.SET_NULL)
     designation = models.ForeignKey(Designation, null=True, blank=True, on_delete=models.SET_NULL)
-    dob = models.DateField(verbose_name='Date of Birth')
-    joinDate = models.DateField(verbose_name='Joining Date')
+    dob = models.DateField(verbose_name='Date of Birth', blank=True, null=True)
+    joinDate = models.DateField(verbose_name='Joining Date', blank=True, null=True)
     type = models.ForeignKey(EmployeeType, null=True, blank=True, on_delete=models.SET_NULL)
-    address = models.CharField(max_length=200, blank=True)
+    address = models.CharField(max_length=200, blank=True, null=True)
     isActive = models.BooleanField(default=False)
-    phone = models.CharField(max_length=15, blank=True)
-    mobile = models.CharField(max_length=15, blank=True)
-    cnic = models.CharField(max_length=13, blank=True)
+    phone = models.CharField(max_length=15, blank=True, null=True)
+    mobile = models.CharField(max_length=15, blank=True, null=True)
+    cnic = models.CharField(max_length=13, blank=True, null=True)
     weekend = models.ForeignKey('attendance.Weekend', null=True, blank=True, on_delete=models.SET_NULL)
     
     def __str__(self):

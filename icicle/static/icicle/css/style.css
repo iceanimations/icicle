@@ -4,22 +4,16 @@ body {
 	font-size: 12pt;
 }
 
-.container {
-	margin: 0 auto;
-	width: 60%;
-}
-
 #error {
 	color: red;
 }
 
 #loginPw, #loginText {
-	border: none;
 	background-color: white;
 	border: solid 1px green;
 }
 
-#loginPw:focus, #loginText:focus {
+.boxShadow:focus {
 	box-shadow: 0 0 5px #008000;
 }
 
@@ -54,16 +48,45 @@ label {
 	text-align: right;
 }
 
+.white {
+	color: white;
+}
+
+.navbar {
+    text-align: center;
+    background-color: white;
+    border: solid 1px green;
+}
+
+.navbar:hover {
+	background-color: green;
+}
+
+.navbar:hover a {
+	color: white;
+}
+
+.navbarButton:link, .navbarButton:visited, .navbarButton:active {
+	text-decoration: none;
+	color: green;
+	width: 100%;
+}
+
+
 .center {
 	margin: 0 auto;
+}
+
+.container {
+	margin: 0 auto;
+	width: 60%;
 }
 
 .row {
 	width: 100%;
 	display: flex;
 	flex-wrap: nowrap;
-	margin-top: 20px;
-	margin-bottom: 20px;
+	margin-top: 40px;
 }
 .col-1 {
 	padding: 4px;
