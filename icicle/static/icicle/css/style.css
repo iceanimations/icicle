@@ -17,6 +17,24 @@ body {
 	box-shadow: 0 0 5px #008000;
 }
 
+.green {
+	background-color: green;
+}
+
+.blue {
+	background-color: blue;
+}
+
+.yellow {
+	background-color: yellow;
+}
+
+.orange {
+	background-color: orange;
+}
+
+
+
 
 #loginSubmit {
 	background-color: white;
@@ -26,7 +44,6 @@ body {
 #loginSubmit:hover {
 	background-color: #008000;
 	color: white;
-	
 }
 
 button::-moz-focus-inner {
@@ -53,25 +70,25 @@ label {
 }
 
 .navbar {
-    text-align: center;
-    background-color: white;
-    border: solid 1px green;
-}
-
-.navbar:hover {
-	background-color: green;
-}
-
-.navbar:hover a {
-	color: white;
+	box-shadow: 0 0 10px #909090;
 }
 
 .navbarButton:link, .navbarButton:visited, .navbarButton:active {
 	text-decoration: none;
 	color: green;
-	width: 100%;
+	text-align: center;
+    background-color: white;
+    border: solid 1px green;
 }
 
+.navbarButton:hover {
+	color: white;
+	background-color: green;
+}
+
+.text-center {
+	text-align: center;
+}
 
 .center {
 	margin: 0 auto;

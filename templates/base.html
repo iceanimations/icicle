@@ -7,19 +7,11 @@
 	</head>
 	<body>
 		<div class="container">
-			<div class="row">
-				<div class="col-3 navbar">
-					<a href="/home" class="navbarButton">Home</a>
-				</div>
-				<div class="col-3 navbar">
-					<a href="/attendance" class="navbarButton">Attendance</a>
-				</div>
-				<div class="col-3 navbar">
-					<a href="/food" class="navbarButton">Food</a>
-				</div>
-				<div class="col-3 navbar">
-					<a href="/logout" class="navbarButton">Logout</a>
-				</div>
+			<div class="row navbar">
+				<a href="/home" class="col-3 navbarButton">Home</a>
+				<a href="/attendance" class="col-3 navbarButton">Attendance</a>
+				<a href="/food" class="col-3 navbarButton">Food</a>
+				<a href="/logout" class="col-3 navbarButton">Logout</a>
 			</div>
 			{% block content %} {% endblock %}
 		</div>
