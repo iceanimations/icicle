@@ -1,0 +1,35 @@
+{% extends "home/employee_edit_base.html" %}
+{% block edit_employee %}
+{% if employee %}
+<div class="row">
+	<div class="col-3"></div>
+	<div class="col-6">
+		<div class="row">
+			<form class="col-12">
+				<div class="row">
+					<label class="col-3">Code</label>
+					<input type="text" name="code" class="col-6" value= "{{ employee.code }}" />
+				</div>
+				<div class="row">
+					<label class="col-3">Name</label>
+					<input type="text" name="name" class="col-6" value="{{ employee.name }}" />
+				</div>
+				<div class="row">
+					<label class="col-3">Email</label>
+					<input type="text" name="email" class="col-6" value="{{ employee.email }}" />
+				</div>
+				<div class="row">
+					<label class="col-3">Photo</label>
+					<input type="image" name="photo" class="col-6" />
+				</div>
+				<div class="row">
+					<div class="col-3"></div>
+					<input type="submit" name="submit" value="Edit" class="col-6" />
+				</div>
+			</form>
+		</div>
+	</div>
+	<div class="col-3"></div>
+</div>
+{% endif %}
+{% endblock %}

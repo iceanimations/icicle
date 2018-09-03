@@ -1,34 +1,32 @@
 {% extends "templates/base.html" %}
-{% block title %} |Login {% endblock %}
+{% block title %}| Login {% endblock %}
 {% block content %}
 <div class="row">
 	<div class="col-3"></div>
 	<div class="col-6">
 		<div class="row">
-			<form class="col-12" id="loginForm" action="" method="post">
+			<form class="col-12" action="" method="post">
 				{% csrf_token %}
 				<div class="row">
-					<label class="col-4 boxShadow">Username</label>
-					<input type="text" name="username" id="loginText" class="col-6 boxShadow"/>
+					<label class="col-3">Username</label>
+					<input type="text" name="username" class="col-6"/>
 				</div>
 				<div class="row">
-					<label class="col-4 boxShadow">Password</label>
-					<input type="password" name="password" id="loginPw" class="col-6 boxShadow"/>
+					<label class="col-3">Password</label>
+					<input type="password" name="password" class="col-6"/>
 				</div>
 				<div class="row">
-					<label class="col-4 boxShadow">Remember me</label>
+					<label class="col-3">Remember me</label>
 					<input type="checkbox" name="rememberMe"/>
 				</div>
 				<div class="row">
-					<div class="col-4 boxShadow"></div>
-					<input type="submit" value="Login" class="col-4" id="loginSubmit"/>
+					<div class="col-3"></div>
+					<input type="submit" value="Login" class="col-6"/>
 				</div>
 				{% if errors %}
 				<div class="row">
-					<div class="col-12" id="error">
-						<div class="text-center">
+					<div class="col-12 red text-center">
 							{{ errors.0 }}
-						</div>
 					</div>
 				</div>
 				{% endif %}

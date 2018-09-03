@@ -31,3 +31,14 @@ def getOrCreateUser(info):
         return None
     else:
         return user
+    
+def editEmployee(request, id=None):
+    #return HttpResponse(models.Employee.objects.get(pk=int(id)))
+    if id:
+        id = int(id)
+        return render(request, 'home/employee_edit.html',
+                      context={'employee': models.Employee.objects.get(pk=id),
+                               'employees': models.Employee.objects.all()})
+    else:
+        return render(request, 'home/employee_edit_base.html',
+                      context={'employees': models.Employee.objects.all()})

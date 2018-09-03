@@ -1,47 +1,30 @@
 body {
-	background-color:#dddddd;
+	background-color: #dddddd;
 	font-family:Arial, Helvetica, sans-serif;
 	font-size: 12pt;
 }
 
-#error {
+.red {
 	color: red;
 }
 
-#loginPw, #loginText {
+form, input {
+	color: green;
+}
+
+
+form input[type=text], form input[type=password],
+form input[type=submit], form select {
 	background-color: white;
 	border: solid 1px green;
 }
 
-.boxShadow:focus {
-	box-shadow: 0 0 5px #008000;
+form input[type=text]:focus, form input[type=password]:focus,
+form select:focus {
+	box-shadow: 0 0 5px green;
 }
 
-.green {
-	background-color: green;
-}
-
-.blue {
-	background-color: blue;
-}
-
-.yellow {
-	background-color: yellow;
-}
-
-.orange {
-	background-color: orange;
-}
-
-
-
-
-#loginSubmit {
-	background-color: white;
-	border: solid 2px green;
-}
-
-#loginSubmit:hover {
+form input[type=submit]:hover {
 	background-color: #008000;
 	color: white;
 }
@@ -50,23 +33,17 @@ button::-moz-focus-inner {
   border: 0;
 }
 
-
-#loginForm { 
+form { 
 	background-color: white;
 	border: solid 1px #cccccc;
 	box-shadow: 0 0 10px #909090;
 }
-label {
+form label {
 	text-align:right;
-	margin-right: 1em;
 }
 
-.align-right {
-	text-align: right;
-}
-
-.white {
-	color: white;
+.center {
+	margin: 0 auto;
 }
 
 .navbar {
@@ -90,10 +67,6 @@ label {
 	text-align: center;
 }
 
-.center {
-	margin: 0 auto;
-}
-
 .container {
 	margin: 0 auto;
 	width: 60%;
@@ -103,7 +76,8 @@ label {
 	width: 100%;
 	display: flex;
 	flex-wrap: nowrap;
-	margin-top: 40px;
+	margin-top: 20px;
+	margin-bottom: 20px;
 }
 .col-1 {
 	padding: 4px;

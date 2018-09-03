@@ -18,8 +18,8 @@ class FoodOrder(models.Model):
     SERVED = 'served'
     CANCELLED = 'cancelled'
     REJECTED = 'rejected'
-    PENDING = 'pending'
-    PLACED = 'placed'
+    PENDING = 'pending' # after approval
+    PLACED = 'placed' # before approval
     
     STATUS_CHOICES = ((SERVED, 'Served'),
                       (CANCELLED, 'Cancelled'),
