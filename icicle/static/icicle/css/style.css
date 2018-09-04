@@ -8,13 +8,14 @@ body {
 	color: red;
 }
 
-form, input {
+form, input, select {
 	color: green;
+	border-radius: 3px;
 }
 
 
 form input[type=text], form input[type=password],
-form input[type=submit], form select {
+form input[type=submit], form input[type=date], form select {
 	background-color: white;
 	border: solid 1px green;
 }
@@ -25,8 +26,9 @@ form select:focus {
 }
 
 form input[type=submit]:hover {
-	background-color: #008000;
+	background-color: green;
 	color: white;
+	cursor:hand;
 }
 
 button::-moz-focus-inner {
@@ -35,11 +37,15 @@ button::-moz-focus-inner {
 
 form { 
 	background-color: white;
-	border: solid 1px #cccccc;
 	box-shadow: 0 0 10px #909090;
 }
 form label {
 	text-align:right;
+}
+
+img {
+	width: 100%;
+	height: auto;
 }
 
 .center {
@@ -47,7 +53,7 @@ form label {
 }
 
 .navbar {
-	box-shadow: 0 0 10px #909090;
+	/*box-shadow: 0 0 10px #909090;*/
 }
 
 .navbarButton:link, .navbarButton:visited, .navbarButton:active {
@@ -55,7 +61,9 @@ form label {
 	color: green;
 	text-align: center;
     background-color: white;
-    border: solid 1px green;
+    margin-right: 5px;
+    box-shadow: 0 0 10px #909090;
+    border-radius: 3px;
 }
 
 .navbarButton:hover {

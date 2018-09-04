@@ -2,6 +2,7 @@ from django.shortcuts import redirect, render
 
 from django.http import HttpResponse
 from . import models
+from attendance.models import Shift
 from icicle import auth
 
 
@@ -32,13 +33,19 @@ def getOrCreateUser(info):
     else:
         return user
     
-def editEmployee(request, id=None):
-    #return HttpResponse(models.Employee.objects.get(pk=int(id)))
-    if id:
-        id = int(id)
-        return render(request, 'home/employee_edit.html',
-                      context={'employee': models.Employee.objects.get(pk=id),
-                               'employees': models.Employee.objects.all()})
+def editEmployee(request):
+    context = {'employees': models.Employee.objects.all(),
+               'departments': models.Department.objects.all(),
+               'shifts': Shift.objects.all(),
+               'designations': models.Designation.objects.all()}
+    if request.method == 'POST':
+        emp = models.Employee.objects.get(pk=int(request.POST['pk']))
+        emp.photo = request.FILES['photo']
+        emp.save()
+        return render(request, 'home/employee_edit.html', context=context)
     else:
-        return render(request, 'home/employee_edit_base.html',
-                      context={'employees': models.Employee.objects.all()})
+        pk = request.GET.get('pk', '')
+        if pk:
+            pk = int(pk)
+            context['employee'] = models.Employee.objects.get(pk=pk)
+        return render(request, 'home/employee_edit.html', context=context)

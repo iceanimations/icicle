@@ -11,25 +11,28 @@ class Designation(models.Model):
     
     def __str__(self):
         return self.title
+    
+def rename_photo(instance, name):
+    return 'home/employee/photo/{}.{}'.format(instance.pk, name.split('.')[-1])
 
 class Employee(models.Model):
-    code = models.IntegerField(null=True, blank=True)
+    code = models.IntegerField(null=True, blank=True, default='')
     name = models.CharField(max_length=50)
-    email = models.CharField(max_length=50, null=True, blank=True)
-    photo = models.ImageField()
+    email = models.CharField(max_length=50, null=True, blank=True, default='')
+    photo = models.ImageField(upload_to=rename_photo, blank=True, default='') #app/model/field
     username = models.CharField(max_length=50)
-    fatherName = models.CharField(max_length=50, verbose_name='Father\'s Name', blank=True, null=True)
+    fatherName = models.CharField(max_length=50, verbose_name='Father\'s Name', blank=True, null=True, default='')
     dept = models.ForeignKey('Department', null=True, blank=True, on_delete=models.CASCADE)
     shift = models.ForeignKey('attendance.Shift', null=True, blank=True, on_delete=models.SET_NULL)
     designation = models.ForeignKey(Designation, null=True, blank=True, on_delete=models.SET_NULL)
-    dob = models.DateField(verbose_name='Date of Birth', blank=True, null=True)
-    joinDate = models.DateField(verbose_name='Joining Date', blank=True, null=True)
+    dob = models.DateField(verbose_name='Date of Birth', blank=True, null=True, default='')
+    joinDate = models.DateField(verbose_name='Joining Date', blank=True, null=True, default='')
     type = models.ForeignKey(EmployeeType, null=True, blank=True, on_delete=models.SET_NULL)
-    address = models.CharField(max_length=200, blank=True, null=True)
+    address = models.CharField(max_length=200, blank=True, null=True, default='')
     isActive = models.BooleanField(default=False)
-    phone = models.CharField(max_length=15, blank=True, null=True)
-    mobile = models.CharField(max_length=15, blank=True, null=True)
-    cnic = models.CharField(max_length=13, blank=True, null=True)
+    phone = models.CharField(max_length=15, blank=True, null=True, default='')
+    mobile = models.CharField(max_length=15, blank=True, null=True, default='')
+    cnic = models.CharField(max_length=13, blank=True, null=True, default='')
     weekend = models.ForeignKey('attendance.Weekend', null=True, blank=True, on_delete=models.SET_NULL)
     
     def __str__(self):

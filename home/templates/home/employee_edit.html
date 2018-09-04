@@ -1,11 +1,50 @@
-{% extends "home/employee_edit_base.html" %}
-{% block edit_employee %}
-{% if employee %}
+{% extends "templates/base.html" %}
+{% block title %}| Edit Employee {% endblock %}
+{% block content %}
+
 <div class="row">
 	<div class="col-3"></div>
 	<div class="col-6">
 		<div class="row">
 			<form class="col-12">
+				<div class="row">
+					<label class="col-3">Employee</label>
+					<select name="pk" class="col-6" onchange="this.form.submit()">
+						<option value="">--Select--</option>
+						{%for emp in employees%}
+						{% if employee  and emp.pk == employee.pk %}
+						<option selected="selected" value="{{ employee.pk }}">{{ emp.name }} ({{ emp.username }})</option>
+						{% else %}
+						<option value="{{ emp.pk }}">{{ emp.name }} ({{ emp.username }})</option>
+						{% endif %}
+						{% endfor %}
+					</select>
+				</div>
+			</form>
+		</div>
+	</div>
+	<div class="col-3"></div>
+</div>
+
+{% if employee %}
+<div class="row">
+	{% load static %}
+	<div class="col-3"></div>
+	<div class="col-6">
+		<div class="row">
+			<form action="/home/editEmployee/" enctype="multipart/form-data" method="post" class="col-12">
+				{% csrf_token %}
+				<input type="hidden" name="pk" value="{{ employee.pk }}" />
+				<div class="row">
+					<label class="col-3">Photo</label>
+					<div class="col-6">
+						<img src="{{ employee.photo.url }}" alt="Photo" />
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-3"></div>
+					<input type="file" name="photo" accept="image/*" class="col-6" />
+				</div>
 				<div class="row">
 					<label class="col-3">Code</label>
 					<input type="text" name="code" class="col-6" value= "{{ employee.code }}" />
@@ -19,8 +58,55 @@
 					<input type="text" name="email" class="col-6" value="{{ employee.email }}" />
 				</div>
 				<div class="row">
-					<label class="col-3">Photo</label>
-					<input type="image" name="photo" class="col-6" />
+					<label class="col-3">Username</label>
+					<input type="text" name="username" class="col-6" value="{{ employee.username }}" />
+				</div>
+				<div class="row">
+					<label class="col-3">Father's Name</label>
+					<input type="text" name="fatherName" class="col-6" value="{{ employee.fatherName }}" />
+				</div>
+				<div class="row">
+					<label class="col-3">Department</label>
+					<select class="col-6" name="dept">
+						<option value="0">--Select--</option>
+						{% for dept in departments %}
+						{% if dept.pk == employee.dept.pk %}
+						<option selected="selected" value="{{ dept.pk }}">{{ dept.name }}</option>
+						{% else %}
+						<option value="{{ dept.pk }}">{{ dept.name }}</option>
+						{% endif %}
+						{% endfor %}
+					</select>
+				</div>
+				<div class="row">
+					<label class="col-3">Shift</label>
+					<select class="col-6" name="shift">
+						<option value="0">--Select--</option>
+						{% for shift in shifts %}
+						{% if shift.pk == employee.shift.pk %}
+						<option selected="selected" value="{{ shift.pk }}">{{ shift.name }}</option>
+						{% else %}
+						<option value="{{ shift.pk }}">{{ shift.name }}</option>
+						{% endif %}
+						{% endfor %}
+					</select>
+				</div>
+				<div class="row">
+					<label class="col-3">Designation</label>
+					<select class="col-6" name="designation">
+						<option value="0">--Select--</option>
+						{% for desig in designations %}
+						{% if desig.pk == employee.desig.pk %}
+						<option selected="selected" value="{{ desig.pk }}">{{ desig.title }}</option>
+						{% else %}
+						<option value="{{ desig.pk }}">{{ desig.title }}</option>
+						{% endif %}
+						{% endfor %}
+					</select>
+				</div>
+				<div class="row">
+					<label class="col-3">Date of Birth</label>
+					<input type="date" name="dob" class="col-6" value="{{ employee.dob }}" />
 				</div>
 				<div class="row">
 					<div class="col-3"></div>
@@ -32,4 +118,5 @@
 	<div class="col-3"></div>
 </div>
 {% endif %}
+
 {% endblock %}
