@@ -36,14 +36,22 @@
 				{% csrf_token %}
 				<input type="hidden" name="pk" value="{{ employee.pk }}" />
 				<div class="row">
-					<label class="col-3">Photo</label>
+					<label class="col-3"></label>
 					<div class="col-6">
-						<img src="{{ employee.photo.url }}" alt="Photo" />
+						<img src="{{ employee.photoUrl }}" alt="Photo" />
 					</div>
 				</div>
 				<div class="row">
 					<div class="col-3"></div>
 					<input type="file" name="photo" accept="image/*" class="col-6" />
+				</div>
+				<div class="row">
+					<label class="col-3">Active</label>
+					{% if employee.isActive %}
+					<input type="checkbox" name="isActive" checked/>
+					{% else %}
+					<input type="checkbox" name="isActive"/>
+					{% endif %}
 				</div>
 				<div class="row">
 					<label class="col-3">Code</label>
@@ -66,14 +74,51 @@
 					<input type="text" name="fatherName" class="col-6" value="{{ employee.fatherName }}" />
 				</div>
 				<div class="row">
+					<label class="col-3">Address</label>
+					<input type="text" name="address" class="col-6" value="{{ employee.address }}" />
+				</div>
+				<div class="row">
+					<label class="col-3">Phone</label>
+					<input type="text" name="phone" class="col-6" value="{{ employee.phone }}" />
+				</div>
+				<div class="row">
+					<label class="col-3">Mobile</label>
+					<input type="text" name="mobile" class="col-6" value="{{ employee.mobile }}" />
+				</div>
+				<div class="row">
+					<label class="col-3">CNIC</label>
+					<input type="text" name="cnic" class="col-6" value="{{ employee.cnic }}" />
+				</div>
+				<div class="row">
+					<label class="col-3">Date of Birth</label>
+					<input type="date" name="dob" class="col-6" value="{{ employee.dob|date:"Y-m-d" }}" />
+				</div>
+				<div class="row">
+					<label class="col-3">Joining Date</label>
+					<input type="date" name="joinDate" class="col-6" value="{{ employee.joinDate|date:"Y-m-d" }}" />
+				</div>
+				<div class="row">
 					<label class="col-3">Department</label>
 					<select class="col-6" name="dept">
 						<option value="0">--Select--</option>
 						{% for dept in departments %}
-						{% if dept.pk == employee.dept.pk %}
-						<option selected="selected" value="{{ dept.pk }}">{{ dept.name }}</option>
+							{% if dept ==  employee.currentDept %}
+								<option selected="selected" value="{{ dept.pk }}">{{ dept.name }}</option>
+							{% else %}
+								<option value="{{ dept.pk }}">{{ dept.name }}</option>
+							{% endif %}
+						{% endfor %}
+					</select>
+				</div>
+				<div class="row">
+					<label class="col-3">Weekend</label>
+					<select class="col-6" name="weekend">
+						<option value="0">--Select--</option>
+						{% for we in weekends %}
+						{% if we == employee.currentWeekend %}
+						<option selected="selected" value="{{ we.pk }}">{{ we.name }}</option>
 						{% else %}
-						<option value="{{ dept.pk }}">{{ dept.name }}</option>
+						<option value="{{ we.pk }}">{{ we.name }}</option>
 						{% endif %}
 						{% endfor %}
 					</select>
@@ -83,7 +128,7 @@
 					<select class="col-6" name="shift">
 						<option value="0">--Select--</option>
 						{% for shift in shifts %}
-						{% if shift.pk == employee.shift.pk %}
+						{% if shift == employee.currentShift %}
 						<option selected="selected" value="{{ shift.pk }}">{{ shift.name }}</option>
 						{% else %}
 						<option value="{{ shift.pk }}">{{ shift.name }}</option>
@@ -105,8 +150,17 @@
 					</select>
 				</div>
 				<div class="row">
-					<label class="col-3">Date of Birth</label>
-					<input type="date" name="dob" class="col-6" value="{{ employee.dob }}" />
+					<label class="col-3">Type</label>
+					<select class="col-6" name="type">
+						<option value="0">--Select--</option>
+						{% for type in types %}
+						{% if type.pk == employee.type.pk %}
+						<option selected="selected" value="{{ type.pk }}">{{ type.type }}</option>
+						{% else %}
+						<option value="{{ type.pk }}">{{ type.type }}</option>
+						{% endif %}
+						{% endfor %}
+					</select>
 				</div>
 				<div class="row">
 					<div class="col-3"></div>

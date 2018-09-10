@@ -7,6 +7,7 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from home.views import getOrCreateUser
 from . import auth
+import json
 import re
 
 
@@ -43,10 +44,10 @@ def login(request):
                     age = None
                     if request.POST.get('rememberMe') == 'on':
                         age = 365 * 24 * 60 * 60 # one year
-                    if getOrCreateUser({'username': userInfo['sAMAccountName'],
-                                        'dept': userInfo['department'],
-                                        'designation': userInfo['title'],
-                                        'name': userInfo['name']}) is None:
+                    if getOrCreateUser({'username': auth.makeString(
+                                            userInfo['sAMAccountName'][0]),
+                                        'name': auth.makeString(
+                                            userInfo['name'][0])}) is None:
                         path = '/home'
                     else:
                         path = request.POST.get('path', '/home')

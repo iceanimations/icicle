@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 from django.db import models
-import datetime
+from datetime import datetime, date, timedelta
 
 class LeaveType(models.Model):
     SICK_LEAVE = 'sickLeave'
@@ -30,7 +30,8 @@ class LeaveType(models.Model):
     consecutiveMin = models.IntegerField(verbose_name='Consecutive (Min)')
     caryForwardable = models.BooleanField(verbose_name='Carry Forwardable')
     onceOnly = models.BooleanField(verbose_name='Once per Employee')
-    periodForAdvance = models.IntegerField(verbose_name='Advance Application Period (Days)')
+    periodForAdvance = models.IntegerField(
+                            verbose_name='Advance Application Period (Days)')
     availability = models.ManyToManyField('home.EmployeeType')
     
     def __str__(self):
@@ -51,11 +52,14 @@ class Attendance(models.Model):
                       (WEEKEND, 'Weekend')) + LeaveType.LEAVE_NAME_CHOICES
     
     date = models.DateField(auto_now_add=True)
-    employee = models.ForeignKey('home.Employee', null=True, blank=True, on_delete=models.SET_NULL)
+    employee = models.ForeignKey('home.Employee', null=True, blank=True,
+                                 on_delete=models.SET_NULL)
     status = models.CharField(max_length=20)
     isLate = models.BooleanField(verbose_name='Is Late?', default=False)
-    isHalfDay = models.BooleanField(verbose_name='Is a Half Day?', default=False)
-    isShortDay = models.BooleanField(verbose_name='Is a Shot Day?', default=False)
+    isHalfDay = models.BooleanField(verbose_name='Is a Half Day?',
+                                    default=False)
+    isShortDay = models.BooleanField(verbose_name='Is a Shot Day?',
+                                     default=False)
     
     def __str__(self):
         return str(self.date) + ' - ' + self.employee.name
@@ -63,15 +67,19 @@ class Attendance(models.Model):
     @classmethod
     def markAttendance(cls, employee, intime):
         Attendance(employee=employee, status=cls.PRESENT,
-                         isLate=intime.time() <= employee.shift.timeFrom + cls.GRACE_TIME).save()
+                         isLate=intime.time() <= employee.shift.timeFrom +
+                         cls.GRACE_TIME).save()
 
 class LeaveRequest(models.Model):
-    attendance = models.ForeignKey(Attendance, null=True, blank=True, on_delete=models.SET_NULL)
-    leaveType = models.ForeignKey(LeaveType, null=True, blank=True, on_delete=models.SET_NULL)
+    attendance = models.ForeignKey(Attendance, null=True, blank=True,
+                                   on_delete=models.SET_NULL)
+    leaveType = models.ForeignKey(LeaveType, null=True, blank=True,
+                                  on_delete=models.SET_NULL)
     description = models.TextField()
     datetime = models.DateTimeField(auto_now_add=True)
     approvalDate = models.DateTimeField()
-    approvedBy = models.ForeignKey('home.Employee', null=True, blank=True, on_delete=models.SET_NULL)
+    approvedBy = models.ForeignKey('home.Employee', null=True, blank=True,
+                                   on_delete=models.SET_NULL)
     remarks = models.TextField(blank=True)
     
     def __str__(self):
@@ -89,14 +97,66 @@ class Weekend(models.Model):
     
     def __str__(self):
         return self.name
+    
+class EmployeeWeekend(models.Model):
+    employee = models.ForeignKey('home.Employee', null=True, blank=True,
+                                 on_delete=models.SET_NULL)
+    weekend = models.ForeignKey(Weekend, null=True, blank=True,
+                                on_delete=models.SET_NULL)
+    dateFrom = models.DateField(auto_now_add=True, null=True,
+                                verbose_name='From')
+    dateTo = models.DateField(null=True, verbose_name='To')
+    
+    def setLastWeekendDateTo(self):
+        lastWeekend = EmployeeWeekend.lastWeekend(self.employee)
+        if lastWeekend:
+            if lastWeekend.dateFrom == date.today():
+                lastWeekend.delete()
+            else:
+                lastWeekend.dateTo = date.today() - timedelta(1)
+                lastWeekend.save()
+                
+    @classmethod
+    def lastWeekend(cls, emp):
+        return EmployeeWeekend.objects.filter(employee=emp
+                                        ).order_by('dateFrom').last()
+        
+    def __str__(self):
+        return '|'.join([self.employee.name, self.weekend.name])
+    
+class EmployeeShift(models.Model):
+    employee = models.ForeignKey('home.Employee', null=True, blank=True,
+                                 on_delete=models.SET_NULL)
+    shift = models.ForeignKey('Shift', null=True, blank=True,
+                              on_delete=models.SET_NULL)
+    dateFrom = models.DateField(auto_now_add=True, null=True,
+                                verbose_name='From')
+    dateTo = models.DateField(null=True,
+                              verbose_name='To')
+    def setLastShiftDateTo(self):
+        lastShift = EmployeeShift.lastShift(self.employee)
+        if lastShift:
+            if lastShift.dateFrom == date.today():
+                lastShift.delete()
+            else:
+                lastShift.dateTo = date.today() - timedelta(1)
+                lastShift.save()
+    
+    @classmethod
+    def lastShift(cls, emp):
+        return EmployeeShift.objects.filter(employee=emp
+                                        ).order_by('dateFrom').last()
 
 class DayOfWeekend(models.Model):
-    weekend = models.ForeignKey(Weekend, null=True, blank=True, on_delete=models.SET_NULL)
-    day = models.ForeignKey(Day, null=True, blank=True, on_delete=models.SET_NULL)
+    weekend = models.ForeignKey(Weekend, null=True, blank=True,
+                                on_delete=models.SET_NULL)
+    day = models.ForeignKey(Day, null=True, blank=True,
+                            on_delete=models.SET_NULL)
 
 class Shift(models.Model):
     name = models.CharField(max_length=30)
-    weekend = models.ForeignKey(Weekend, null=True, blank=True, on_delete=models.SET_NULL)
+    weekend = models.ForeignKey(Weekend, null=True, blank=True,
+                                on_delete=models.SET_NULL)
     timeFrom = models.TimeField()
     timeTo = models.TimeField()
     
@@ -110,10 +170,10 @@ class Ramzan(models.Model):
     @classmethod
     def isRamzan(cls, date=None):
         if date is None:
-            date = datetime.date.today()
+            date = date.today()
         for obj in cls.objects.all():
             if obj.dateTo is None:
-                obj.dateTo = obj.dateFrom + datetime.timedelta(days=30)
+                obj.dateTo = obj.dateFrom + timedelta(days=30)
                  
             if date >= obj.dateFrom and date <= obj.dateTo:
                 return True
@@ -145,14 +205,17 @@ class InOut(models.Model):
     
     STATUS_CHOICES = ((IN, 'In'), (OUT, 'Out'))
     
-    employee = models.ForeignKey('home.Employee', null=True, blank=True, on_delete=models.SET_NULL)
+    employee = models.ForeignKey('home.Employee', null=True, blank=True,
+                                 on_delete=models.SET_NULL)
     inoutId = models.IntegerField()
     datetime = models.DateTimeField(auto_now_add=True)
-    inoutType = models.CharField(choices=INOUT_TYPE_CHOICES, max_length=15, default=BIOMETRIC)
+    inoutType = models.CharField(choices=INOUT_TYPE_CHOICES, max_length=15,
+                                 default=BIOMETRIC)
     status = models.CharField(choices=STATUS_CHOICES, max_length=15)
     
     def __str__(self):
-        return self.employee.name +' - '+ self.status +' - '+ str(self.datetime)
+        return (self.employee.name +' - '+ self.status +
+                ' - '+ str(self.datetime))
     
     def lastInoutId(self, employee=None):
         ids = self.objects.values_list('inoutId', flat=True)
@@ -165,7 +228,8 @@ class InOut(models.Model):
     def save(self, *args, **kwargs):
         lastId = self.lastInoutId()
         if lastId != 0:
-            eLastId = self.objects.filter(employee=self.employee).aggregate(models.Max('inoutId'))
+            eLastId = self.objects.filter(employee=self.employee).aggregate(
+                                                        models.Max('inoutId'))
             eLastStatus = self.objects.filter(inoutId=eLastId)
             if len(eLastStatus) == 2:
                 eLastStatus = self.OUT
@@ -180,10 +244,14 @@ class InOut(models.Model):
         else: self.inoutId = lastId
         super(InOut, self).save(*args, **kwargs)
         if self.status == self.IN:
-            today = datetime.datetime.today()
+            today = date.today()
             now = self.employee.shift.timeFrom
             ins = self.objects.filter(employee=self.employee,
-                                      datetime__gt=datetime.datetime(today.year, today.month, today.day, now.hour, now.minute, now.second),
+                                      datetime__gt=datetime(
+                                                today.year,
+                                                today.month, today.day,
+                                                now.hour, now.minute,
+                                                now.second),
                                       datetime__lt=self.datetime,
                                       status=self.IN)
             if len(ins) == 0:

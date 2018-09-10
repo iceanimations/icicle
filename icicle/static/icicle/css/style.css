@@ -10,7 +10,6 @@ body {
 
 form, input, select {
 	color: green;
-	border-radius: 3px;
 }
 
 
@@ -63,7 +62,6 @@ img {
     background-color: white;
     margin-right: 5px;
     box-shadow: 0 0 10px #909090;
-    border-radius: 3px;
 }
 
 .navbarButton:hover {
