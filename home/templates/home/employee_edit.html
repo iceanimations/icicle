@@ -32,6 +32,11 @@
 	<div class="col-3"></div>
 	<div class="col-6">
 		<div class="row">
+			{% if errors.0 %}
+				<div class="col-12 text-center red">{{ errors.0 }}</div>
+			{% endif %}
+		</div>
+		<div class="row">
 			<form action="/home/editEmployee/" enctype="multipart/form-data" method="post" class="col-12">
 				{% csrf_token %}
 				<input type="hidden" name="pk" value="{{ employee.pk }}" />
@@ -48,10 +53,22 @@
 				<div class="row">
 					<label class="col-3">Active</label>
 					{% if employee.isActive %}
-					<input type="checkbox" name="isActive" checked/>
+						<input type="checkbox" name="isActive" checked/>
+						<span>&nbsp; Joining Date: {{ employee.joiningDate|date:"Y-m-d" }}</span>
 					{% else %}
-					<input type="checkbox" name="isActive"/>
+						<input type="checkbox" name="isActive"/>
+						{% if employee.endingDate %}
+							<span>&nbsp; Ending Date: {{ employee.endingDate|date:"Y-m-d" }}</span>
+						{% endif %}
 					{% endif %}
+				</div>
+				<div class="row">
+					<label class="col-3">Joining Date</label>
+					<input type="date" name="joinDate" class="col-6" />
+				</div>
+				<div class="row">
+					<label class="col-3">Ending Date</label>
+					<input type="date" name="endDate" class="col-6" />
 				</div>
 				<div class="row">
 					<label class="col-3">Code</label>
@@ -94,10 +111,6 @@
 					<input type="date" name="dob" class="col-6" value="{{ employee.dob|date:"Y-m-d" }}" />
 				</div>
 				<div class="row">
-					<label class="col-3">Joining Date</label>
-					<input type="date" name="joinDate" class="col-6" value="{{ employee.joinDate|date:"Y-m-d" }}" />
-				</div>
-				<div class="row">
 					<label class="col-3">Department</label>
 					<select class="col-6" name="dept">
 						<option value="0">--Select--</option>
@@ -115,11 +128,11 @@
 					<select class="col-6" name="weekend">
 						<option value="0">--Select--</option>
 						{% for we in weekends %}
-						{% if we == employee.currentWeekend %}
-						<option selected="selected" value="{{ we.pk }}">{{ we.name }}</option>
-						{% else %}
-						<option value="{{ we.pk }}">{{ we.name }}</option>
-						{% endif %}
+							{% if we == employee.currentWeekend %}
+								<option selected="selected" value="{{ we.pk }}">{{ we.name }}</option>
+							{% else %}
+								<option value="{{ we.pk }}">{{ we.name }}</option>
+							{% endif %}
 						{% endfor %}
 					</select>
 				</div>
@@ -128,11 +141,11 @@
 					<select class="col-6" name="shift">
 						<option value="0">--Select--</option>
 						{% for shift in shifts %}
-						{% if shift == employee.currentShift %}
-						<option selected="selected" value="{{ shift.pk }}">{{ shift.name }}</option>
-						{% else %}
-						<option value="{{ shift.pk }}">{{ shift.name }}</option>
-						{% endif %}
+							{% if shift == employee.currentShift %}
+								<option selected="selected" value="{{ shift.pk }}">{{ shift.name }}</option>
+							{% else %}
+								<option value="{{ shift.pk }}">{{ shift.name }}</option>
+							{% endif %}
 						{% endfor %}
 					</select>
 				</div>
@@ -141,11 +154,11 @@
 					<select class="col-6" name="designation">
 						<option value="0">--Select--</option>
 						{% for desig in designations %}
-						{% if desig.pk == employee.desig.pk %}
-						<option selected="selected" value="{{ desig.pk }}">{{ desig.title }}</option>
-						{% else %}
-						<option value="{{ desig.pk }}">{{ desig.title }}</option>
-						{% endif %}
+							{% if desig == employee.currentDesignation %}
+								<option selected="selected" value="{{ desig.pk }}">{{ desig.title }}</option>
+							{% else %}
+								<option value="{{ desig.pk }}">{{ desig.title }}</option>
+							{% endif %}
 						{% endfor %}
 					</select>
 				</div>
@@ -153,12 +166,12 @@
 					<label class="col-3">Type</label>
 					<select class="col-6" name="type">
 						<option value="0">--Select--</option>
-						{% for type in types %}
-						{% if type.pk == employee.type.pk %}
-						<option selected="selected" value="{{ type.pk }}">{{ type.type }}</option>
-						{% else %}
-						<option value="{{ type.pk }}">{{ type.type }}</option>
-						{% endif %}
+						{% for typ in types %}
+							{% if typ == employee.currentType %}
+								<option selected="selected" value="{{ typ.pk }}">{{ typ.type }}</option>
+							{% else %}
+								<option value="{{ typ.pk }}">{{ typ.type }}</option>
+							{% endif %}
 						{% endfor %}
 					</select>
 				</div>
