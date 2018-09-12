@@ -31,17 +31,15 @@ class Employee(models.Model):
     mobile = models.CharField(max_length=15, blank=True, null=True, unique=True)
     cnic = models.CharField(max_length=13, blank=True, null=True, unique=True)
     
-    dept = models.ManyToManyField('Department', through='EmployeeDepartment',
-                                  blank=True)
+    dept = models.ManyToManyField('Department', through='EmployeeDepartment')
     
-    type = models.ForeignKey(EmployeeType, null=True, blank=True,
-                             on_delete=models.SET_NULL)
-    shift = models.ForeignKey('attendance.Shift', null=True, blank=True,
-                              on_delete=models.SET_NULL)
-    designation = models.ForeignKey(Designation, null=True, blank=True,
-                                    on_delete=models.SET_NULL)
-    weekend = models.ForeignKey('attendance.Weekend', null=True, blank=True,
-                                on_delete=models.SET_NULL)
+    type = models.ManyToManyField(EmployeeType, through='EmployeeTypeMapping')
+    shift = models.ManyToManyField('attendance.Shift',
+                              through='attendance.EmployeeShift')
+    designation = models.ManyToManyField(Designation,
+                                         through='EmployeeDesignation')
+    weekend = models.ManyToManyField('attendance.Weekend',
+                                     through='attendance.EmployeeWeekend')
     
     def __str__(self):
         return self.name
