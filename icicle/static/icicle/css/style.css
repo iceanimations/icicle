@@ -8,10 +8,9 @@ body {
 	color: red;
 }
 
-form, input, select {
-	color: green;
+.title {
+	font-size: 16pt;
 }
-
 
 form input[type=text], form input[type=password],
 form input[type=submit], form input[type=date], form select {
@@ -34,10 +33,6 @@ button::-moz-focus-inner {
   border: 0;
 }
 
-form { 
-	background-color: white;
-	box-shadow: 0 0 10px #909090;
-}
 form label {
 	text-align:right;
 }
@@ -57,11 +52,8 @@ img {
 
 .navbarButton:link, .navbarButton:visited, .navbarButton:active {
 	text-decoration: none;
-	color: green;
 	text-align: center;
-    background-color: white;
     margin-right: 5px;
-    box-shadow: 0 0 10px #909090;
 }
 
 .navbarButton:hover {
@@ -76,6 +68,12 @@ img {
 .container {
 	margin: 0 auto;
 	width: 60%;
+}
+
+.box {
+	background-color: white;
+	box-shadow: 0 0 10px #909090;
+	color: green;
 }
 
 .row {

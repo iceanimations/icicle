@@ -1,1 +1,24 @@
-{% extends "templates/base.html" %}
+{% extends "base.html" %}
+{% block title %} | home {% endblock %}
+{% block content %}
+{% if employee %}
+	<div class="row box">
+		<div class="col-2">
+			<img src="{{ employee.photoUrl }}" alt="Photo" />
+		</div>
+		<div class="col-10">
+			<div class="row">
+				<b>{{ employee.name }} </b> &nbsp; ({{ employee.currentDesignation }})
+			</div>
+			<div class="row">
+				{{ employee.currentDept }} ({{ employee.currentType }})
+			</div>
+		</div>
+	</div>
+{% else %}
+	<div class="row box">
+		Please <a href="/login">login</a> to continue
+	</div>
+{% endif %}
+
+{% endblock %}

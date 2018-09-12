@@ -1,4 +1,4 @@
-{% extends "templates/base.html" %}
+{% extends "base.html" %}
 {% block title %}| Edit Employee {% endblock %}
 {% block content %}
 
@@ -6,14 +6,14 @@
 	<div class="col-3"></div>
 	<div class="col-6">
 		<div class="row">
-			<form class="col-12">
+			<form class="col-12 box">
 				<div class="row">
 					<label class="col-3">Employee</label>
 					<select name="pk" class="col-6" onchange="this.form.submit()">
 						<option value="">--Select--</option>
 						{%for emp in employees%}
 						{% if employee  and emp.pk == employee.pk %}
-						<option selected="selected" value="{{ employee.pk }}">{{ emp.name }} ({{ emp.username }})</option>
+						<option selected="selected" value="{{ emp.pk }}">{{ emp.name }} ({{ emp.username }})</option>
 						{% else %}
 						<option value="{{ emp.pk }}">{{ emp.name }} ({{ emp.username }})</option>
 						{% endif %}
@@ -30,7 +30,7 @@
 <div class="row">
 	{% load static %}
 	<div class="col-3"></div>
-	<div class="col-6">
+	<div class="col-6 box">
 		<div class="row">
 			{% if errors.0 %}
 				<div class="col-12 text-center red">{{ errors.0 }}</div>
@@ -54,25 +54,21 @@
 					<label class="col-3">Active</label>
 					{% if employee.isActive %}
 						<input type="checkbox" name="isActive" checked/>
-						<span>&nbsp; Joining Date: {{ employee.joiningDate|date:"Y-m-d" }}</span>
 					{% else %}
-						<input type="checkbox" name="isActive"/>
-						{% if employee.endingDate %}
-							<span>&nbsp; Ending Date: {{ employee.endingDate|date:"Y-m-d" }}</span>
-						{% endif %}
+						<input type="checkbox" name="isActive" />
 					{% endif %}
 				</div>
-				<div class="row">
+				<div class="row" id="jd">
 					<label class="col-3">Joining Date</label>
-					<input type="date" name="joinDate" class="col-6" />
+					<input type="date" name="joinDate" class="col-6" value="{{ employee.joiningDate|date:"Y-m-d" }}" />
 				</div>
-				<div class="row">
-					<label class="col-3">Ending Date</label>
-					<input type="date" name="endDate" class="col-6" />
-				</div>
-				<div class="row">
+				<div class="row" id="code">
 					<label class="col-3">Code</label>
 					<input type="text" name="code" class="col-6" value= "{{ employee.code }}" />
+				</div>
+				<div class="row" id="ed">
+					<label class="col-3">Ending Date</label>
+					<input type="date" name="endDate" class="col-6" value="{{ employee.endingDate|date:"Y-m-d" }}" />
 				</div>
 				<div class="row">
 					<label class="col-3">Name</label>

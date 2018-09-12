@@ -12,11 +12,11 @@ def home(request):
         return redirect('/login')
     else:
         username = request.COOKIES.get('user').split('|')[0]
-        user = models.Employee.objects.get(username=username)
-        if user.isActive:
-            return render(request, 'home.html', context={'user': user})
+        employee = models.Employee.objects.get(username=username)
+        if employee.isActive():
+            return render(request, 'home/home.html', context={'employee': employee})
         else:
-            return HttpResponse('Account created for %s!'%user.name +
+            return HttpResponse('Account created for %s!'%employee.name +
                                 ' Please consult with HR for activation.')
         
 
@@ -31,6 +31,9 @@ def getOrCreateUser(info):
         return None
     else:
         return user
+
+class EmpTemp(object):
+    pass
     
 def editEmployee(request):
     context = {'employees': models.Employee.objects.all()}
@@ -41,6 +44,7 @@ def editEmployee(request):
     context['weekends'] = Weekend.objects.all()
     if request.method == 'POST':
         errors = []
+        empTemp = EmpTemp()
         emp = models.Employee.objects.get(pk=int(request.POST['pk']))
         photo = request.FILES.get('photo', None)
         if photo is not None:
@@ -50,8 +54,11 @@ def editEmployee(request):
         isActive = bool(request.POST.get('isActive', None))
         code = request.POST.get('code', None)
         dt = None
+        jd = request.POST.get('joinDate', None)
+        #return HttpResponse(jd)
+        ed = request.POST.get('endDate', None)
         if isActive:
-            dt = request.POST.get('joinDate', None)
+            dt = jd
             if not emp.isActive():
                 if not dt:
                     errors.append('Joining Date missing')
@@ -60,7 +67,7 @@ def editEmployee(request):
                 if not code.isdigit():
                     errors.append('Invalid Code')
         else:
-            dt = request.POST.get('endDate', None)
+            dt = ed
             if emp.isActive():
                 if not dt:
                     errors.append('Ending Date missing')
@@ -83,7 +90,11 @@ def editEmployee(request):
         if mobile: emp.mobile = mobile
         else: errors.append('Mobile missing')
         cnic = request.POST.get('cnic', None)
-        if cnic: emp.cnic = cnic
+        if cnic:
+            if cnic.isdigit():
+                emp.cnic = cnic
+            else:
+                errors.append('Invalid CNIC')
         dob = request.POST.get('dob', None)
         if dob: emp.dob = dob
         dept = int(request.POST.get('dept'))
@@ -126,7 +137,31 @@ def editEmployee(request):
                 empType.setLastTypeDateTo()
                 fields.append(empType)
         else: errors.append('Type missing')
-        if not errors:
+        if errors:
+            #TODO: dates problem
+            empTemp.photo = emp.photoUrl
+            empTemp.name = name
+            empTemp.isActive = isActive
+            empTemp.code = code
+            empTemp.joiningDate = jd
+            empTemp.endingDate = ed
+            empTemp.username = username
+            empTemp.email = email
+            empTemp.fatherName = fatherName
+            empTemp.address = address
+            empTemp.mobile = mobile
+            empTemp.phone = phone
+            empTemp.cnic = cnic
+            empTemp.dob = dob
+            empTemp.currentDept = dept
+            empTemp.currentWeekend = weekend
+            empTemp.currentShift = shift
+            empTemp.currentDesignation = designation
+            empTemp.currentType = typ
+            empTemp.pk = emp.pk
+            context['errors'] = errors
+            context['employee'] = empTemp
+        else:
             for field in fields: field.save()
             if isActive:
                 if not emp.isActive():
@@ -135,9 +170,6 @@ def editEmployee(request):
                 if emp.isActive():
                     emp.deactivate(dt)
             emp.save()
-        else:
-            context['errors'] = errors
-            context['employee'] = emp
         return render(request, 'home/employee_edit.html', context=context)
     else:
         pk = request.GET.get('pk', '')

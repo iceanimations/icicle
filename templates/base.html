@@ -4,14 +4,15 @@
 		<title>Icicle {% block title %} {% endblock %}</title>
 		{% load static %}
 	<link href={% static "static/icicle/css/style.css" %} type="text/css" rel="stylesheet" />
+	<script type="text/javascript" src={% static "static/icicle/js/script.js" %}></script>
 	</head>
 	<body>
 		<div class="container">
 			<div class="row navbar">
-				<a href="/home" class="col-3 navbarButton">Home</a>
-				<a href="/attendance" class="col-3 navbarButton">Attendance</a>
-				<a href="/food" class="col-3 navbarButton">Food</a>
-				<a style="margin-right: 0px;" href="/logout" class="col-3 navbarButton">Logout</a>
+				<a href="/home" class="col-3 navbarButton box">Home</a>
+				<a href="/attendance" class="col-3 navbarButton box">Attendance</a>
+				<a href="/food" class="col-3 navbarButton box" >Food</a>
+				<a style="margin-right: 0px;" href="/logout" class="col-3 navbarButton box">Logout</a>
 			</div>
 			{% block content %} {% endblock %}
 		</div>

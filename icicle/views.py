@@ -19,7 +19,7 @@ def home(request):
         return redirect('home/')
 
 def showLoginForm(request, errors=None):
-    return render(request, 'templates/login.html', context={'errors': errors})
+    return render(request, 'login.html', context={'errors': errors})
 
 def login(request):
     errors = []
@@ -50,7 +50,7 @@ def login(request):
                                             userInfo['name'][0])}) is None:
                         path = '/home'
                     else:
-                        path = request.POST.get('path', '/home')
+                        path = request.POST.get('path', '/home') #TODO: not possible (how to add path to POST?)
                     response = redirect(path)
                     response.set_cookie('user',
                                auth.makeSecureCookie(username),
