@@ -11,14 +11,16 @@ def home(request):
     if not auth.isLoggedIn(request):
         return redirect('/login')
     else:
-        username = request.COOKIES.get('user').split('|')[0]
-        employee = models.Employee.objects.get(username=username)
-        if employee.isActive():
-            return render(request, 'home/home.html', context={'employee': employee})
+        user = loggedInUser(request)
+        if user.isActive():
+            return render(request, 'home/home.html', context={'user': user})
         else:
-            return HttpResponse('Account created for %s!'%employee.name +
+            return HttpResponse('Account created for %s!'%user.name +
                                 ' Please consult with HR for activation.')
-        
+            
+def loggedInUser(request):
+    username = request.COOKIES.get('user').split('|')[0]
+    return models.Employee.objects.get(username=username)
 
 def getOrCreateUser(info):
     username = info.get('username')
@@ -36,145 +38,152 @@ class EmpTemp(object):
     pass
     
 def editEmployee(request):
-    context = {'employees': models.Employee.objects.all()}
-    context['departments'] = models.Department.objects.all()
-    context['shifts'] = Shift.objects.all()
-    context['designations'] = models.Designation.objects.all()
-    context['types'] = models.EmployeeType.objects.all()
-    context['weekends'] = Weekend.objects.all()
-    if request.method == 'POST':
-        errors = []
-        empTemp = EmpTemp()
-        emp = models.Employee.objects.get(pk=int(request.POST['pk']))
-        photo = request.FILES.get('photo', None)
-        if photo is not None:
-            emp.photo = photo
-        elif not emp.photo:
-            errors.append('Photo missing')
-        isActive = bool(request.POST.get('isActive', None))
-        code = request.POST.get('code', None)
-        dt = None
-        jd = request.POST.get('joinDate', None)
-        #return HttpResponse(jd)
-        ed = request.POST.get('endDate', None)
-        if isActive:
-            dt = jd
-            if not emp.isActive():
-                if not dt:
-                    errors.append('Joining Date missing')
-                if not code:
-                    errors.append('Code missing')
-                if not code.isdigit():
-                    errors.append('Invalid Code')
-        else:
-            dt = ed
-            if emp.isActive():
-                if not dt:
-                    errors.append('Ending Date missing')
-        name = request.POST.get('name', None)
-        if name: emp.name = name
-        else: errors.append('Name missing')
-        email = request.POST.get('email', None)
-        if email: emp.email = email
-        username = request.POST.get('username', None)
-        if username: emp.username = username
-        else: errors.append('Username missing')
-        fatherName = request.POST.get('fatherName', None)
-        if fatherName: emp.fatherName = fatherName
-        else: errors.append('Father\'s name missing')
-        address = request.POST.get('address', None)
-        if address: emp.address = address
-        phone = request.POST.get('phone', None)
-        if phone: emp.phone = phone
-        mobile = request.POST.get('mobile', None)
-        if mobile: emp.mobile = mobile
-        else: errors.append('Mobile missing')
-        cnic = request.POST.get('cnic', None)
-        if cnic:
-            if cnic.isdigit():
-                emp.cnic = cnic
-            else:
-                errors.append('Invalid CNIC')
-        dob = request.POST.get('dob', None)
-        if dob: emp.dob = dob
-        dept = int(request.POST.get('dept'))
-        fields = [] # fields to save if no error
-        if dept:
-            dept = models.Department.objects.get(pk=dept)
-            if emp.currentDept() != dept:
-                empDept = models.EmployeeDepartment(employee=emp, dept=dept)
-                empDept.setLastDeptDateTo()
-                fields.append(empDept)
-        else: errors.append('Department missing')
-        weekend = int(request.POST.get('weekend'))
-        if weekend:
-            weekend = Weekend.objects.get(pk=weekend)
-            if emp.currentWeekend() != weekend:
-                empWeekend = EmployeeWeekend(employee=emp, weekend=weekend)
-                empWeekend.setLastWeekendDateTo()
-                empWeekend.save()
-        shift = int(request.POST.get('shift'))
-        if shift:
-            shift = Shift.objects.get(pk=shift)
-            if emp.currentShift() != shift:
-                empShift = EmployeeShift(employee=emp, shift=shift)
-                empShift.setLastShiftDateTo()
-                empShift.save()
-        designation = int(request.POST.get('designation'))
-        if designation:
-            designation = models.Designation.objects.get(pk=designation)
-            if emp.currentDesignation() != designation:
-                empDesignation = models.EmployeeDesignation(employee=emp,
-                                                     designation=designation)
-                empDesignation.setLastDesignationDateTo()
-                fields.append(empDesignation)
-        else: errors.append('Designation missing')
-        typ = int(request.POST.get('type'))
-        if typ:
-            typ = models.EmployeeType.objects.get(pk=typ)
-            if emp.currentType() != typ:
-                empType = models.EmployeeTypeMapping(employee=emp, type=typ)
-                empType.setLastTypeDateTo()
-                fields.append(empType)
-        else: errors.append('Type missing')
-        if errors:
-            #TODO: dates problem
-            #return HttpResponse(emp.photoUrl)
-            empTemp.photoUrl = emp.photoUrl
-            empTemp.name = name
-            empTemp.isActive = isActive
-            empTemp.code = code
-            empTemp.joiningDate = jd
-            empTemp.endingDate = ed
-            empTemp.username = username
-            empTemp.email = email
-            empTemp.fatherName = fatherName
-            empTemp.address = address
-            empTemp.mobile = mobile
-            empTemp.phone = phone
-            empTemp.cnic = cnic
-            empTemp.dob = dob
-            empTemp.currentDept = dept
-            empTemp.currentWeekend = weekend
-            empTemp.currentShift = shift
-            empTemp.currentDesignation = designation
-            empTemp.currentType = typ
-            empTemp.pk = emp.pk
-            context['errors'] = errors
-            context['employee'] = empTemp
-        else:
-            for field in fields: field.save()
+    user = loggedInUser(request)
+    if user:
+        context = {'employees': models.Employee.objects.all()}
+        context['user'] = user
+        context['departments'] = models.Department.objects.all()
+        context['shifts'] = Shift.objects.all()
+        context['designations'] = models.Designation.objects.all()
+        context['types'] = models.EmployeeType.objects.all()
+        context['weekends'] = Weekend.objects.all()
+        if request.method == 'POST':
+            errors = []
+            empTemp = EmpTemp()
+            emp = models.Employee.objects.get(pk=int(request.POST['pk']))
+            photo = request.FILES.get('photo', None)
+            if photo is not None:
+                emp.photo = photo
+            elif not emp.photo:
+                errors.append('Photo missing')
+            isActive = bool(request.POST.get('isActive', None))
+            code = request.POST.get('code', None)
+            dt = None
+            jd = request.POST.get('joinDate', None)
+            #return HttpResponse(jd)
+            ed = request.POST.get('endDate', None)
             if isActive:
+                dt = jd
                 if not emp.isActive():
-                    emp.activate(dt, code)
+                    if not dt:
+                        errors.append('Joining Date missing')
+                    if not code:
+                        errors.append('Code missing')
+                    if not code.isdigit():
+                        errors.append('Invalid Code')
             else:
+                dt = ed
                 if emp.isActive():
-                    emp.deactivate(dt)
-            emp.save()
-        return render(request, 'home/employee_edit.html', context=context)
+                    if not dt:
+                        errors.append('Ending Date missing')
+            name = request.POST.get('name', None)
+            if name: emp.name = name
+            else: errors.append('Name missing')
+            email = request.POST.get('email', None)
+            if email: emp.email = email
+            username = request.POST.get('username', None)
+            if username: emp.username = username
+            else: errors.append('Username missing')
+            fatherName = request.POST.get('fatherName', None)
+            if fatherName: emp.fatherName = fatherName
+            else: errors.append('Father\'s name missing')
+            address = request.POST.get('address', None)
+            if address: emp.address = address
+            phone = request.POST.get('phone', None)
+            if phone: emp.phone = phone
+            mobile = request.POST.get('mobile', None)
+            if mobile: emp.mobile = mobile
+            else: errors.append('Mobile missing')
+            cnic = request.POST.get('cnic', None)
+            if cnic:
+                if cnic.isdigit():
+                    emp.cnic = cnic
+                else:
+                    errors.append('Invalid CNIC')
+            dob = request.POST.get('dob', None)
+            if dob: emp.dob = dob
+            dept = int(request.POST.get('dept'))
+            fields = [] # fields to save if no error
+            if dept:
+                dept = models.Department.objects.get(pk=dept)
+                if emp.currentDept() != dept:
+                    empDept = models.EmployeeDepartment(employee=emp, dept=dept)
+                    empDept.setLastDeptDateTo()
+                    fields.append(empDept)
+            else: errors.append('Department missing')
+            weekend = int(request.POST.get('weekend'))
+            if weekend:
+                weekend = Weekend.objects.get(pk=weekend)
+                if emp.currentWeekend() != weekend:
+                    empWeekend = EmployeeWeekend(employee=emp, weekend=weekend)
+                    empWeekend.setLastWeekendDateTo()
+                    empWeekend.save()
+            shift = int(request.POST.get('shift'))
+            if shift:
+                shift = Shift.objects.get(pk=shift)
+                if emp.currentShift() != shift:
+                    empShift = EmployeeShift(employee=emp, shift=shift)
+                    empShift.setLastShiftDateTo()
+                    empShift.save()
+            designation = int(request.POST.get('designation'))
+            if designation:
+                designation = models.Designation.objects.get(pk=designation)
+                if emp.currentDesignation() != designation:
+                    empDesignation = models.EmployeeDesignation(employee=emp,
+                                                         designation=designation)
+                    empDesignation.setLastDesignationDateTo()
+                    fields.append(empDesignation)
+            else: errors.append('Designation missing')
+            typ = int(request.POST.get('type'))
+            if typ:
+                typ = models.EmployeeType.objects.get(pk=typ)
+                if emp.currentType() != typ:
+                    empType = models.EmployeeTypeMapping(employee=emp, type=typ)
+                    empType.setLastTypeDateTo()
+                    fields.append(empType)
+            else: errors.append('Type missing')
+            if errors:
+                #TODO: dates problem
+                #return HttpResponse(emp.photoUrl)
+                empTemp.photoUrl = emp.photoUrl
+                empTemp.name = name
+                empTemp.isActive = isActive
+                empTemp.code = code
+                empTemp.joiningDate = jd
+                empTemp.endingDate = ed
+                empTemp.username = username
+                empTemp.email = email
+                empTemp.fatherName = fatherName
+                empTemp.address = address
+                empTemp.mobile = mobile
+                empTemp.phone = phone
+                empTemp.cnic = cnic
+                empTemp.dob = dob
+                empTemp.currentDept = dept
+                empTemp.currentWeekend = weekend
+                empTemp.currentShift = shift
+                empTemp.currentDesignation = designation
+                empTemp.currentType = typ
+                empTemp.pk = emp.pk
+                context['errors'] = errors
+                context['employee'] = empTemp
+            else:
+                for field in fields: field.save()
+                if isActive:
+                    if not emp.isActive():
+                        emp.activate(dt, code)
+                else:
+                    if emp.isActive():
+                        emp.deactivate(dt)
+                emp.save()
+            return render(request, 'home/employee_edit.html', context=context)
+        else:
+            pk = request.GET.get('pk', '')
+            if pk:
+                pk = int(pk)
+                context['employee'] = models.Employee.objects.get(pk=pk)
+            return render(request, 'home/employee_edit.html', context=context)
     else:
-        pk = request.GET.get('pk', '')
-        if pk:
-            pk = int(pk)
-            context['employee'] = models.Employee.objects.get(pk=pk)
-        return render(request, 'home/employee_edit.html', context=context)
+        response = redirect('/login')
+        response['redirect_path'] = '/home/editEmployee'
+        return response

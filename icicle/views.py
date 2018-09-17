@@ -14,9 +14,9 @@ import re
 
 def home(request):
     if not auth.isLoggedIn(request):
-        return redirect('login/')
+        return redirect('/login')
     else:
-        return redirect('home/')
+        return redirect('/home')
 
 def showLoginForm(request, errors=None):
     return render(request, 'login.html', context={'errors': errors})
@@ -50,7 +50,7 @@ def login(request):
                                             userInfo['name'][0])}) is None:
                         path = '/home'
                     else:
-                        path = request.POST.get('path', '/home') #TODO: not possible (how to add path to POST?)
+                        path = request.META.get('redirect_path', '/home') #TODO: not possible (how to add path to POST?)
                     response = redirect(path)
                     response.set_cookie('user',
                                auth.makeSecureCookie(username),

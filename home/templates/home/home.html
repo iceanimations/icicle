@@ -1,37 +1,37 @@
 {% extends "base.html" %}
 {% block title %} | home {% endblock %}
 {% block content %}
-{% if employee %}
+{% if user %}
 	<div class="row">
 		<div class="col-2"></div>
 		<div class="col-8">
 			<div class="row box">
 				<div class="col-3">
-					<img class="box-shadow-green" src="{{ employee.photoUrl }}" alt="Photo" />
+					<img class="box-shadow-green" src="{{ user.photoUrl }}" alt="Photo" />
 				</div>
 				<div class="col-9">
 					<div class="row">
 						<label class="col-3">Name:</label>
 						<div class="col-9">
-							<b>{{ employee.name }} </b>
+							<b>{{ user.name }} </b>
 						</div>
 					</div>
 					<div class="row">
 						<label class="col-3">Designation:</label>
 						<div class="col-9">
-							<b> {{ employee.currentDesignation }} </b>
+							<b> {{ user.currentDesignation }} </b>
 						</div>
 					</div>
 					<div class="row">
 						<label class="col-3">Department:</label>
 						<div class="col-9">
-							<b> {{ employee.currentDept }} </b>
+							<b> {{ user.currentDept }} </b>
 						</div>
 					</div>
 					<div class="row">
 						<label class="col-3">Type:</label>
 						<div class="col-9">
-							<b> {{ employee.currentType }} </b>
+							<b> {{ user.currentType }} </b>
 						</div>
 					</div>
 				</div>
