@@ -68,6 +68,15 @@ img {
 	color: yellow;
 }
 
+.footer {
+	position: fixed;
+	left: 0;
+	bottom: 0;
+	text-align: center;
+	width: 100%;
+	min-height: 50px;
+}
+
 .navbar-button:hover, .theme-color {
 	color: white;
 	background-color: #0070a0;

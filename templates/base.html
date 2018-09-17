@@ -4,6 +4,7 @@
 		<title>Icicle {% block title %} {% endblock %}</title>
 		{% load static %}
 	<link href={% static "static/icicle/css/style.css" %} type="text/css" rel="stylesheet" />
+	<link rel="icon" href="http://www.iceanimations.com/wp-content/uploads/2016/08/xcropped-ICE-Favicon-1-32x32.png.pagespeed.ic.nES0OYbE-P.webp" />
 	<script type="text/javascript" src={% static "static/icicle/js/script.js" %}></script>
 	</head>
 	<body>
@@ -41,6 +42,13 @@
 				<a style="margin-right: 0px;" href="/food" class="col-4 navbar-button box" >Food</a>
 			</div>
 			{% block content %} {% endblock %}
+		</div>
+		<div class="footer theme-color">
+			<div class="row">
+				<div class="col-12">
+					Copyright &copy; 2018 ICE Animations (Pvt) Ltd
+				</div>
+			</div>
 		</div>
 	</body>
 </html>

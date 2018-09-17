@@ -139,7 +139,8 @@ def editEmployee(request):
         else: errors.append('Type missing')
         if errors:
             #TODO: dates problem
-            empTemp.photo = emp.photoUrl
+            #return HttpResponse(emp.photoUrl)
+            empTemp.photoUrl = emp.photoUrl
             empTemp.name = name
             empTemp.isActive = isActive
             empTemp.code = code
