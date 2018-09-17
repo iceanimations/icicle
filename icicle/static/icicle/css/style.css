@@ -1,7 +1,7 @@
 body {
-	background-color: #dddddd;
 	font-family:Arial, Helvetica, sans-serif;
 	font-size: 12pt;
+	margin: 0px;
 }
 
 .red {
@@ -15,16 +15,22 @@ body {
 form input[type=text], form input[type=password],
 form input[type=submit], form input[type=date], form select {
 	background-color: white;
-	border: solid 1px green;
+	border: solid 1px #0070a0;
 }
 
 form input[type=text]:focus, form input[type=password]:focus,
 form select:focus {
-	box-shadow: 0 0 5px green;
+	box-shadow: 0 0 5px #0070a0;
+}
+
+.box-shadow-green {
+	border: solid 1px #0070a0;
+	box-shadow: 0 0 5px #0070a0;
+	
 }
 
 form input[type=submit]:hover {
-	background-color: green;
+	background-color: #0070a0;
 	color: white;
 	cursor:hand;
 }
@@ -33,7 +39,7 @@ button::-moz-focus-inner {
   border: 0;
 }
 
-form label {
+label {
 	text-align:right;
 }
 
@@ -50,31 +56,46 @@ img {
 	/*box-shadow: 0 0 10px #909090;*/
 }
 
-.navbarButton:link, .navbarButton:visited, .navbarButton:active {
+.navbar-button:link, .navbarButton:visited, .navbarButton:active {
 	text-decoration: none;
 	text-align: center;
     margin-right: 5px;
 }
 
-.navbarButton:hover {
+.header-button:link, .header-button:visited, .header-button:active {
+	text-decoration: none;
+	text-align: center;
+	color: yellow;
+}
+
+.navbar-button:hover, .theme-color {
 	color: white;
-	background-color: green;
+	background-color: #0070a0;
 }
 
 .text-center {
 	text-align: center;
 }
 
+.text-right {
+	text-align: right;
+}
+
+
 .container {
 	margin: 0 auto;
 	width: 60%;
+	height: 100%;
+	background-color: #dddddd;
+	padding: 5px;
 }
 
 .box {
 	background-color: white;
 	box-shadow: 0 0 10px #909090;
-	color: green;
+	color: #0070a0;
 }
+
 
 .row {
 	width: 100%;

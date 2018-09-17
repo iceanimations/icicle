@@ -101,6 +101,9 @@ class Employee(models.Model):
         if lastPeriod:
             return lastPeriod.dateTo
         
+    def totalCurrentOrLastPeriod(self):
+        pass
+        
     def code(self):
         lastPeriod = self.lastPeriod()
         if lastPeriod:

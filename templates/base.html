@@ -7,12 +7,38 @@
 	<script type="text/javascript" src={% static "static/icicle/js/script.js" %}></script>
 	</head>
 	<body>
+		<div style="margin-top: 0px; margin-bottom: 0px;" class="row theme-color">
+			<div class="col-2">
+				<div class="col-2">
+					<img src="http://www.iceanimations.com/wp-content/uploads/2016/08/ICE-Animations-Logo_Without_Text_normal.gif" alt="Logo" />
+				</div>
+			</div>
+			<div class="col-1"></div>
+			<div class="text-center col-6">
+				<h1>ICICLE</h1>
+			</div>
+			<div class="col-3">
+				{% if employee %}
+					<div class="row text-right">
+						<div class="col-12">
+							Welcome, {{ employee.name }}! (<a class="header-button" href="/logout">Logout</a>)
+						</div>
+					</div>
+				{% else %}
+					<div class="row text-right">
+						<div class="col-12">
+							<a class="header-button" href="/login">Login/Register</a>
+						</div>
+					</div>
+				{% endif %}
+				
+			</div>
+		</div>
 		<div class="container">
 			<div class="row navbar">
-				<a href="/home" class="col-3 navbarButton box">Home</a>
-				<a href="/attendance" class="col-3 navbarButton box">Attendance</a>
-				<a href="/food" class="col-3 navbarButton box" >Food</a>
-				<a style="margin-right: 0px;" href="/logout" class="col-3 navbarButton box">Logout</a>
+				<a href="/home" class="col-4 navbar-button box">Home</a>
+				<a href="/attendance" class="col-4 navbar-button box">Attendance</a>
+				<a style="margin-right: 0px;" href="/food" class="col-4 navbar-button box" >Food</a>
 			</div>
 			{% block content %} {% endblock %}
 		</div>
