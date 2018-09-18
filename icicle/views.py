@@ -5,7 +5,7 @@ Created on Aug 13, 2018
 '''
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
-from home.views import getOrCreateUser
+from home.views import getOrCreateUser, loggedInUser
 from . import auth
 import json
 import re
@@ -22,6 +22,8 @@ def showLoginForm(request, errors=None):
     return render(request, 'login.html', context={'errors': errors})
 
 def login(request):
+    if loggedInUser(request):
+        return redirect('/home')
     errors = []
     if request.method == 'GET':
         return showLoginForm(request)
@@ -50,7 +52,7 @@ def login(request):
                                             userInfo['name'][0])}) is None:
                         path = '/home'
                     else:
-                        path = request.META.get('redirect_path', '/home') #TODO: not possible (how to add path to POST?)
+                        path = request.META.get('redirect_path', '/home')
                     response = redirect(path)
                     response.set_cookie('user',
                                auth.makeSecureCookie(username),

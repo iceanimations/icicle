@@ -19,7 +19,7 @@
 				<h1>ICICLE</h1>
 			</div>
 			<div class="col-3">
-				{% if user %}
+				{% if user.name %}
 					<div class="row text-right">
 						<div class="col-12">
 							Welcome, {{ user.name }}! (<a class="header-button" href="/logout">Logout</a>)
@@ -28,7 +28,7 @@
 				{% else %}
 					<div class="row text-right">
 						<div class="col-12">
-							<a class="header-button" href="/login">Login/Register</a>
+							<a class="header-button" href="/login">Login</a>
 						</div>
 					</div>
 				{% endif %}

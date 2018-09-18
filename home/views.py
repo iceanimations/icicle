@@ -16,11 +16,13 @@ def home(request):
             return render(request, 'home/home.html', context={'user': user})
         else:
             return HttpResponse('Account created for %s!'%user.name +
-                                ' Please consult with HR for activation.')
+                                ' Please consult HR for activation.')
             
 def loggedInUser(request):
-    username = request.COOKIES.get('user').split('|')[0]
-    return models.Employee.objects.get(username=username)
+    cookie = request.COOKIES.get('user')
+    if cookie:
+        username = cookie.split('|')[0]
+        return models.Employee.objects.get(username=username)
 
 def getOrCreateUser(info):
     username = info.get('username')
