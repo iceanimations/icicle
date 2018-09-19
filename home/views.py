@@ -2,7 +2,7 @@ from django.shortcuts import redirect, render
 
 from django.http import HttpResponse
 from . import models
-from attendance.models import Shift, Weekend, EmployeeWeekend, EmployeeShift
+from attendance.models import Shift, EmployeeShift
 from icicle import auth, utilities as util
 import json
 
@@ -48,7 +48,6 @@ def editEmployee(request):
         context['shifts'] = Shift.objects.all()
         context['designations'] = models.Designation.objects.all()
         context['types'] = models.EmployeeType.objects.all()
-        context['weekends'] = Weekend.objects.all()
         if request.method == 'POST':
             errors = []
             empTemp = EmpTemp()
@@ -113,13 +112,6 @@ def editEmployee(request):
                     empDept.setLastDeptDateTo()
                     fields.append(empDept)
             else: errors.append('Department missing')
-            weekend = int(request.POST.get('weekend'))
-            if weekend:
-                weekend = Weekend.objects.get(pk=weekend)
-                if emp.currentWeekend() != weekend:
-                    empWeekend = EmployeeWeekend(employee=emp, weekend=weekend)
-                    empWeekend.setLastWeekendDateTo()
-                    empWeekend.save()
             shift = int(request.POST.get('shift'))
             if shift:
                 shift = Shift.objects.get(pk=shift)
@@ -162,7 +154,6 @@ def editEmployee(request):
                 empTemp.cnic = cnic
                 empTemp.dob = dob
                 empTemp.currentDept = dept
-                empTemp.currentWeekend = weekend
                 empTemp.currentShift = shift
                 empTemp.currentDesignation = designation
                 empTemp.currentType = typ

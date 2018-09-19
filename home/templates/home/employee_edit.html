@@ -120,19 +120,6 @@
 					</select>
 				</div>
 				<div class="row">
-					<label class="col-3">Weekend</label>
-					<select class="col-6" name="weekend">
-						<option value="0">--Select--</option>
-						{% for we in weekends %}
-							{% if we == employee.currentWeekend %}
-								<option selected="selected" value="{{ we.pk }}">{{ we.name }}</option>
-							{% else %}
-								<option value="{{ we.pk }}">{{ we.name }}</option>
-							{% endif %}
-						{% endfor %}
-					</select>
-				</div>
-				<div class="row">
 					<label class="col-3">Shift</label>
 					<select class="col-6" name="shift">
 						<option value="0">--Select--</option>

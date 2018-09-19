@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 from django.db import models
 from datetime import datetime, date, timedelta
+from django.apps import apps
 
 class LeaveType(models.Model):
     SICK_LEAVE = 'sickLeave'
@@ -39,8 +40,6 @@ class LeaveType(models.Model):
             if name == self.name: return nicename
 
 class Attendance(models.Model):
-    GRACE_TIME = 0
-    
     PRESENT = 'present'
     ABSENT = 'absent'
     HOLIDAY = 'holiday'
@@ -76,7 +75,7 @@ class LeaveRequest(models.Model):
 class Day(models.Model):
     name = models.CharField(max_length=20)
     
-    def __str__(self, *args):
+    def __str__(self):
         return self.name
     
 class EmployeeShift(models.Model):
@@ -103,6 +102,9 @@ class EmployeeShift(models.Model):
                                         ).order_by('dateFrom').last()
                                         
 class Shift(models.Model):
+    #when emp marks attendance AHEAD_PERIOD hours before the shift start time
+    AHEAD_PERIOD = 2
+    
     name = models.CharField(max_length=30)
     days = models.ManyToManyField(Day, through='DayOfShift')
     
@@ -115,16 +117,26 @@ class Shift(models.Model):
             return days.difference(self.days)
         return days.difference(self.dayofshift_set.filter(status=DayOfShift.ON
                                 ).values_list('day', flat=True))
+        
+    def timeRange(self, day):
+        day = self.dayofshift_set.filter(day__name=day)
+        if day:
+            return day[0].timeFrom, day[0].timeTo, day[0].isTimeToNextDay
     
 class DayOfShift(models.Model):
     ON = 'on'
     OPT = 'opt'
-    shift = models.ForeignKey(Shift, on_delete=models.SET_NULL)
-    day = models.ForeignKey(Day, on_delete=models.SET_NULL)
-    timeFrom = models.TimeField()
-    timeTo = models.TimeField()
-    isTimeToNextDay = models.BooleanField() # when timeTo crosses day boundary
-    status = models.CharField(max_length=3)
+    
+    STATUS_CHOICES = ((ON, 'On'),
+                      (OPT, 'Optional'))
+    
+    shift = models.ForeignKey(Shift, null=True, on_delete=models.SET_NULL)
+    day = models.ForeignKey(Day, null=True, on_delete=models.SET_NULL)
+    timeFrom = models.TimeField(verbose_name='From')
+    timeTo = models.TimeField(verbose_name='To')
+    # when timeTo crosses day boundary
+    isTimeToNextDay = models.BooleanField(verbose_name='Crossing Date?')
+    status = models.CharField(max_length=3, choices=STATUS_CHOICES)
     
 class Ramzan(models.Model):
     dateFrom = models.DateField(verbose_name='Starts From')
@@ -158,10 +170,11 @@ class Session(models.Model):
     COMPUTED = 'computed'
     SELF = 'self'
     
-    employee = models.ForeignKey('home.Employee', on_delete=models.SET_NULL)
+    employee = models.ForeignKey('home.Employee', null=True,
+                                 on_delete=models.SET_NULL)
     
-    inTime = models.DateTimeField(null=True)
-    outTime = models.DateTimeField(null=True)
+    inTime = models.DateTimeField(null=True, default=None)
+    outTime = models.DateTimeField(null=True, default=None)
     
     inType = models.CharField(max_length=15, blank=True)
     outType = models.CharField(max_length=15, blank=True)
@@ -169,78 +182,152 @@ class Session(models.Model):
     def __str__(self):
         return (self.employee.name + '(' + str(self.intime) +
                 '-' + str(self.outtime) + ')')
-        
-    def save(self):
-        self.inTime.date
+    
+    @classmethod
+    def previousSession(cls, employee, dt):
+        return cls.objects.filter(employee=employee, inTime__lt=dt
+                                  ).order_by('inTime').last()
+    
+    @classmethod
+    def nextSession(cls, employee, dt):
+        return cls.objects.filter(employee=employee, inTime__gte=dt
+                                  ).order_by('inTime').first()
+    
 
-# class InOut(models.Model):
-#     BIOMETRIC = 'biometric'
-#     MANUAL = 'manual'
-#     COMPUTED = 'computed'
-#     SELF = 'self'
-#     
-#     IN = 'in'
-#     OUT = 'out'
-#     
-#     INOUT_TYPE_CHOICES = ((BIOMETRIC, 'Biometric'),
-#                           (MANUAL, 'Manual'),
-#                           (COMPUTED, 'Computed'),
-#                           (SELF, 'Self'))
-#     
-#     STATUS_CHOICES = ((IN, 'In'), (OUT, 'Out'))
-#     
-#     employee = models.ForeignKey('home.Employee', null=True, blank=True,
-#                                  on_delete=models.SET_NULL)
-#     inoutId = models.IntegerField() #for pairing in and out
-#     datetime = models.DateTimeField(auto_now_add=True)
-#     inoutType = models.CharField(choices=INOUT_TYPE_CHOICES, max_length=15,
-#                                  default=BIOMETRIC)
-#     status = models.CharField(choices=STATUS_CHOICES, max_length=15)
-#     
-#     def __str__(self):
-#         return (self.employee.name +' - '+ self.status +
-#                 ' - '+ str(self.datetime))
-#     
-#     def lastInoutId(self, employee=None):
-#         ids = InOut.objects.values_list('inoutId', flat=True)
-#         if len(ids) > 0:
-#             m = max(ids);
-#         else:
-#             m = 0;
-#         return m
-#     
-#     def save(self, *args, **kwargs):
-#         lastId = self.lastInoutId()
-#         if lastId != 0:
-#             #when current status is same as last status for an employee, return
-#             eLastId = InOut.objects.filter(employee=self.employee).aggregate(
-#                                                         models.Max('inoutId'))
-#             eLastStatus = self.objects.filter(inoutId=eLastId)
-#             if len(eLastStatus) == 2:
-#                 eLastStatus = self.OUT
-#             else: eLastStatus = self.IN
-#             if self.status == eLastStatus:
-#                 return
-#         else:
-#             #when first ever status is out, return
-#             if self.status == self.OUT:
-#                 return
-#         if self.status == self.IN:
-#             self.inoutId = lastId + 1
-#         else: self.inoutId = lastId
-#         super(InOut, self).save(*args, **kwargs)
-#         #mark attendance
-#         if self.status == self.IN:
-#             today = date.today()
-#             shiftTimeFrom = self.employee.currentShift().timeFrom
-#             ins = InOut.objects.filter(employee=self.employee,
-#                                       datetime__gt=datetime(
-#                                                 today.year,
-#                                                 today.month, today.day,
-#                                                 shiftTimeFrom.hour,
-#                                                 shiftTimeFrom.minute,
-#                                                 shiftTimeFrom.second),
-#                                       datetime__lt=self.datetime,
-#                                       status=self.IN)
-#             if len(ins) == 0:
-#                 Attendance.markAttendance(self.employee, self.datetime)
+class Entry(models.Model):
+    IN = 'in'
+    OUT = 'out'
+    TID_TO_INOUT = {
+        1: IN,
+        2: OUT,
+        3: IN,
+        4: OUT
+    }
+    
+    uid = models.IntegerField()
+    tid = models.IntegerField()
+    date = models.DateField(max_length=8)
+    time = models.TimeField(max_length=6)
+    
+    @property
+    def datetime(self):
+        return datetime(self.date.year,
+                        self.date.month,
+                        self.date.day,
+                        self.time.hour,
+                        self.time.minute,
+                        self.time.second)
+    
+    @property
+    def status(self):
+        return self.TID_TO_INOUT[self.tid]
+    
+    @property
+    def employee(self):
+        return apps.get_model('home', 'Employee'
+                              ).objects.filter(code=self.uid)
+    
+    def save(self, typ=Session.BIOMETRIC):
+        if self.employee is None:
+            return
+        if self.tid not in self.TID_TO_INOUT:
+            return
+        if self.status == self.IN:
+            ps = Session.previousSession(self.employee, self.datetime)
+            if ps:
+                if ps.outTime is None:
+                    ps.outTime = self.datetime - timedelta(seconds=1)
+                    ps.outType = Session.COMPUTED
+                    ps.save()
+                    ns = Session.nextSession(employee=self.employee,
+                                             inTime=self.datetime,
+                                             inType=typ)
+                    if ns:
+                        if ns.inType == Session.COMPUTED:
+                            ns.inTime = self.datetime
+                            ns.inType = typ
+                            ns.save()
+                        else:
+                            s = Session(employee=self.employee, inTime=self.datetime,
+                                inType=typ)                    
+                            s.outTime = ns.inTime - timedelta(seconds=1)
+                            s.outType = Session.COMPUTED
+                            s.save()
+                    else:
+                        Session(employee=self.employee, inTime=self.datetime,
+                                inType=typ).save()
+                else:
+                    if ps.outTime > self.datetime:
+                        Session(employee=self.employee, inTime=self.datetime,
+                                inType=typ, outTime=ps.outTime,
+                                outType=ps.outType).save()
+                        ps.outTime = self.datetime - timedelta(seconds=1)
+                        if ps.outType != Session.COMPUTED:
+                            ps.outType = Session.COMPUTED
+                        ps.save()
+                    else:
+                        ns = Session.nextSession(employee=self.employee,
+                                             inTime=self.datetime,
+                                             inType=typ)
+                        if ns:
+                            if ns.inType == Session.COMPUTED:
+                                ns.inTime = self.datetime
+                                ns.inType = typ
+                                ns.save()
+                            else:
+                                s = Session(employee=self.employee,
+                                            inTime=self.datetime,
+                                            inType=typ)
+                                
+                                s.outTime = ns.inTime - timedelta(seconds=1)
+                                s.outType = Session.COMPUTED
+                                s.save()
+                        else:
+                            Session(employee=self.employee,
+                                            inTime=self.datetime,
+                                            inType=typ).save()
+                            
+                            
+            else:
+                ns = Session.nextSession(employee=self.employee,
+                                         inTime=self.datetime)
+                if ns:
+                    if ns.inType == Session.COMPUTED:
+                        ns.inTime = self.datetime
+                        ns.inType = typ
+                        ns.save()
+                    else:
+                        Session(employee=self.employee, inTime=self.datetime,
+                                inType=typ,
+                                outTime=ns.inTime - timedelta(seconds=1),
+                                outType=Session.COMPUTED).save()
+                else:
+                    Session(employee=self.employee, inTime=self.datetime,
+                            inType=typ).save()
+        else:
+            ps = Session.previousSession(self.employee, self.datetime)
+            if ps:
+                if ps.outType is None or ps.outType == Session.COMPUTED:
+                    ps.outTime = self.datetime
+                    ps.outType = typ
+                    ps.save()
+                else:
+                    if ps.outTime < self.datetime:
+                        Session(employee=self.employee, outTime=self.datetime,
+                                outType=typ,
+                                inTime=self.datetime - timedelta(seconds=1),
+                                inType=Session.COMPUTED).save()
+                    else:
+                        Session(employee=self.employee,
+                                inTime=self.datetime + timedelta(seconds=1),
+                                inType=Session.COMPUTED,
+                                outTime=ps.outTime, outType=ps.outType).save()
+                        ps.outTime = self.datetime
+                        ps.outType = typ
+                        ps.save()
+            else:
+                Session(employee=self.employee, outTime=self.datetime,
+                        outType=typ,
+                        inTime=self.datetime - timedelta(seconds=1),
+                        inType=Session.COMPUTED).save()
+        super(Entry, self).save()

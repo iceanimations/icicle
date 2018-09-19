@@ -6,25 +6,14 @@ from .models import *
 # Register your models here.
 
 
-admin.site.register([Day, Shift, Ramzan, Holiday])
+admin.site.register([Day, Ramzan, Holiday, Session, LeaveType,
+                     Attendance, LeaveRequest])
 
-class LeaveAvailabilityInline(admin.TabularInline):
-    model = LeaveType.availability.through
+class DayOfShiftInline(admin.TabularInline):
+    model = Shift.days.through
     extra = 1
-    
-class LeaveTypeAdmin(admin.ModelAdmin):
-    inlines = (LeaveAvailabilityInline,)
-    
-class DayOfWeekendInline(admin.TabularInline):
-    model = DayOfWeekend
-    extra = 1
-    
-class WeekendAdmin(admin.ModelAdmin):
-    inlines = (DayOfWeekendInline,)
-    
-class InOutAdmin(admin.ModelAdmin):
-    exclude = ('inoutId', 'datetime')
-    
-admin.site.register(Weekend, WeekendAdmin)
-admin.site.register(LeaveType, LeaveTypeAdmin)
-admin.site.register(InOut, InOutAdmin)
+
+class ShiftAdmin(admin.ModelAdmin):
+    inlines = [DayOfShiftInline]
+
+admin.site.register(Shift, ShiftAdmin)

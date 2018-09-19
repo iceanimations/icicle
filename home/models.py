@@ -20,8 +20,6 @@ def rename_photo(instance, name):
 
 class Employee(models.Model):
     
-    SHIFT_GRACE_TIME = 2
-    
     name = models.CharField(max_length=50)
     email = models.CharField(max_length=50, null=True, blank=True, unique=True)
     photo = models.ImageField(upload_to=rename_photo, blank=True)
@@ -56,11 +54,8 @@ class Employee(models.Model):
         
     def currentWeekend(self, optional=False):
         return self.currentShift().weekend(optional)
-        
-        
-        
+
     def currentShift(self):
-        #TODO: when no shift, get it from dept, company
         empShift = apps.get_model('attendance', 'EmployeeShift').lastShift(self)
         if empShift:
             return empShift.shift
@@ -111,7 +106,12 @@ class Employee(models.Model):
     def isShiftOngoing(self):
         shift = self.currentShift()
         if shift:
-            shift.timeFrom
+            try:
+                start, end, crossing = shift.timeRange(date.today(
+                                                        ).strftime('%A'))
+            except TypeError:
+                return False
+            shift.AHEAD_PERIOD
         
     def code(self):
         lastPeriod = self.lastPeriod()
