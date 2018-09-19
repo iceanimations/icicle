@@ -46,29 +46,17 @@ class Attendance(models.Model):
     HOLIDAY = 'holiday'
     WEEKEND = 'weekend'
     
-    STATUS_CHOICES = ((PRESENT, 'Present'),
-                      (ABSENT, 'Absent'),
-                      (HOLIDAY, 'Holiday'),
-                      (WEEKEND, 'Weekend')) + LeaveType.LEAVE_NAME_CHOICES
-    
     date = models.DateField(auto_now_add=True)
     employee = models.ForeignKey('home.Employee', null=True, blank=True,
                                  on_delete=models.SET_NULL)
     status = models.CharField(max_length=20)
-    isLate = models.BooleanField(verbose_name='Is Late?', default=False)
-    isHalfDay = models.BooleanField(verbose_name='Is a Half Day?',
-                                    default=False)
-    isShortDay = models.BooleanField(verbose_name='Is a Shot Day?',
-                                     default=False)
-    
+    #TODO: get shift on a given day, employee, property or method
     def __str__(self):
         return str(self.date) + ' - ' + self.employee.name
     
     @classmethod
-    def markAttendance(cls, employee, intime):
-        Attendance(employee=employee, status=cls.PRESENT,
-                         isLate=intime.time() <= employee.shift.timeFrom +
-                         cls.GRACE_TIME).save()
+    def markAttendance(cls, employee):
+        Attendance(employee=employee, status=cls.PRESENT).save()
 
 class LeaveRequest(models.Model):
     attendance = models.ForeignKey(Attendance, null=True, blank=True,
@@ -90,39 +78,6 @@ class Day(models.Model):
     
     def __str__(self, *args):
         return self.name
-
-class Weekend(models.Model):
-    name = models.CharField(max_length=20)
-    days = models.ManyToManyField(Day, through='DayOfWeekend')
-    
-    def __str__(self):
-        return self.name
-    
-class EmployeeWeekend(models.Model):
-    employee = models.ForeignKey('home.Employee', null=True, blank=True,
-                                 on_delete=models.SET_NULL)
-    weekend = models.ForeignKey(Weekend, null=True, blank=True,
-                                on_delete=models.SET_NULL)
-    dateFrom = models.DateField(auto_now_add=True, null=True,
-                                verbose_name='From')
-    dateTo = models.DateField(null=True, verbose_name='To')
-    
-    def setLastWeekendDateTo(self):
-        lastWeekend = EmployeeWeekend.lastWeekend(self.employee)
-        if lastWeekend:
-            if lastWeekend.dateFrom == date.today():
-                lastWeekend.delete()
-            else:
-                lastWeekend.dateTo = date.today() - timedelta(1)
-                lastWeekend.save()
-                
-    @classmethod
-    def lastWeekend(cls, emp):
-        return EmployeeWeekend.objects.filter(employee=emp
-                                        ).order_by('dateFrom').last()
-        
-    def __str__(self):
-        return '|'.join([self.employee.name, self.weekend.name])
     
 class EmployeeShift(models.Model):
     employee = models.ForeignKey('home.Employee', null=True, blank=True,
@@ -146,22 +101,30 @@ class EmployeeShift(models.Model):
     def lastShift(cls, emp):
         return EmployeeShift.objects.filter(employee=emp
                                         ).order_by('dateFrom').last()
-
-class DayOfWeekend(models.Model):
-    weekend = models.ForeignKey(Weekend, null=True, blank=True,
-                                on_delete=models.SET_NULL)
-    day = models.ForeignKey(Day, null=True, blank=True,
-                            on_delete=models.SET_NULL)
-
+                                        
 class Shift(models.Model):
     name = models.CharField(max_length=30)
-    weekend = models.ForeignKey(Weekend, null=True, blank=True,
-                                on_delete=models.SET_NULL)
-    timeFrom = models.TimeField()
-    timeTo = models.TimeField()
+    days = models.ManyToManyField(Day, through='DayOfShift')
     
     def __str__(self):
         return self.name
+    
+    def weekend(self, optional=False):
+        days = Day.objects.all()
+        if not optional:
+            return days.difference(self.days)
+        return days.difference(self.dayofshift_set.filter(status=DayOfShift.ON
+                                ).values_list('day', flat=True))
+    
+class DayOfShift(models.Model):
+    ON = 'on'
+    OPT = 'opt'
+    shift = models.ForeignKey(Shift, on_delete=models.SET_NULL)
+    day = models.ForeignKey(Day, on_delete=models.SET_NULL)
+    timeFrom = models.TimeField()
+    timeTo = models.TimeField()
+    isTimeToNextDay = models.BooleanField() # when timeTo crosses day boundary
+    status = models.CharField(max_length=3)
     
 class Ramzan(models.Model):
     dateFrom = models.DateField(verbose_name='Starts From')
@@ -189,70 +152,95 @@ class Holiday(models.Model):
     def __str__(self):
         return self.name +' - '+ str(self.date)
 
-class InOut(models.Model):
+class Session(models.Model):
     BIOMETRIC = 'biometric'
     MANUAL = 'manual'
     COMPUTED = 'computed'
     SELF = 'self'
     
-    IN = 'in'
-    OUT = 'out'
+    employee = models.ForeignKey('home.Employee', on_delete=models.SET_NULL)
     
-    INOUT_TYPE_CHOICES = ((BIOMETRIC, 'Biometric'),
-                          (MANUAL, 'Manual'),
-                          (COMPUTED, 'Computed'),
-                          (SELF, 'Self'))
+    inTime = models.DateTimeField(null=True)
+    outTime = models.DateTimeField(null=True)
     
-    STATUS_CHOICES = ((IN, 'In'), (OUT, 'Out'))
-    
-    employee = models.ForeignKey('home.Employee', null=True, blank=True,
-                                 on_delete=models.SET_NULL)
-    inoutId = models.IntegerField()
-    datetime = models.DateTimeField(auto_now_add=True)
-    inoutType = models.CharField(choices=INOUT_TYPE_CHOICES, max_length=15,
-                                 default=BIOMETRIC)
-    status = models.CharField(choices=STATUS_CHOICES, max_length=15)
+    inType = models.CharField(max_length=15, blank=True)
+    outType = models.CharField(max_length=15, blank=True)
     
     def __str__(self):
-        return (self.employee.name +' - '+ self.status +
-                ' - '+ str(self.datetime))
-    
-    def lastInoutId(self, employee=None):
-        ids = self.objects.values_list('inoutId', flat=True)
-        if len(ids) > 0:
-            m = max(ids); c = ids.count(m)
-        else:
-            m = 0; c = 1
-        return m, c
-    
-    def save(self, *args, **kwargs):
-        lastId = self.lastInoutId()
-        if lastId != 0:
-            eLastId = self.objects.filter(employee=self.employee).aggregate(
-                                                        models.Max('inoutId'))
-            eLastStatus = self.objects.filter(inoutId=eLastId)
-            if len(eLastStatus) == 2:
-                eLastStatus = self.OUT
-            else: eLastStatus = self.IN
-            if self.status == eLastStatus:
-                return
-        else:
-            if self.status == self.OUT:
-                return
-        if self.status == self.IN:
-            self.inoutId = lastId + 1
-        else: self.inoutId = lastId
-        super(InOut, self).save(*args, **kwargs)
-        if self.status == self.IN:
-            today = date.today()
-            now = self.employee.shift.timeFrom
-            ins = self.objects.filter(employee=self.employee,
-                                      datetime__gt=datetime(
-                                                today.year,
-                                                today.month, today.day,
-                                                now.hour, now.minute,
-                                                now.second),
-                                      datetime__lt=self.datetime,
-                                      status=self.IN)
-            if len(ins) == 0:
-                Attendance.markAttendance(self.employee, self.datetime)
+        return (self.employee.name + '(' + str(self.intime) +
+                '-' + str(self.outtime) + ')')
+        
+    def save(self):
+        self.inTime.date
+
+# class InOut(models.Model):
+#     BIOMETRIC = 'biometric'
+#     MANUAL = 'manual'
+#     COMPUTED = 'computed'
+#     SELF = 'self'
+#     
+#     IN = 'in'
+#     OUT = 'out'
+#     
+#     INOUT_TYPE_CHOICES = ((BIOMETRIC, 'Biometric'),
+#                           (MANUAL, 'Manual'),
+#                           (COMPUTED, 'Computed'),
+#                           (SELF, 'Self'))
+#     
+#     STATUS_CHOICES = ((IN, 'In'), (OUT, 'Out'))
+#     
+#     employee = models.ForeignKey('home.Employee', null=True, blank=True,
+#                                  on_delete=models.SET_NULL)
+#     inoutId = models.IntegerField() #for pairing in and out
+#     datetime = models.DateTimeField(auto_now_add=True)
+#     inoutType = models.CharField(choices=INOUT_TYPE_CHOICES, max_length=15,
+#                                  default=BIOMETRIC)
+#     status = models.CharField(choices=STATUS_CHOICES, max_length=15)
+#     
+#     def __str__(self):
+#         return (self.employee.name +' - '+ self.status +
+#                 ' - '+ str(self.datetime))
+#     
+#     def lastInoutId(self, employee=None):
+#         ids = InOut.objects.values_list('inoutId', flat=True)
+#         if len(ids) > 0:
+#             m = max(ids);
+#         else:
+#             m = 0;
+#         return m
+#     
+#     def save(self, *args, **kwargs):
+#         lastId = self.lastInoutId()
+#         if lastId != 0:
+#             #when current status is same as last status for an employee, return
+#             eLastId = InOut.objects.filter(employee=self.employee).aggregate(
+#                                                         models.Max('inoutId'))
+#             eLastStatus = self.objects.filter(inoutId=eLastId)
+#             if len(eLastStatus) == 2:
+#                 eLastStatus = self.OUT
+#             else: eLastStatus = self.IN
+#             if self.status == eLastStatus:
+#                 return
+#         else:
+#             #when first ever status is out, return
+#             if self.status == self.OUT:
+#                 return
+#         if self.status == self.IN:
+#             self.inoutId = lastId + 1
+#         else: self.inoutId = lastId
+#         super(InOut, self).save(*args, **kwargs)
+#         #mark attendance
+#         if self.status == self.IN:
+#             today = date.today()
+#             shiftTimeFrom = self.employee.currentShift().timeFrom
+#             ins = InOut.objects.filter(employee=self.employee,
+#                                       datetime__gt=datetime(
+#                                                 today.year,
+#                                                 today.month, today.day,
+#                                                 shiftTimeFrom.hour,
+#                                                 shiftTimeFrom.minute,
+#                                                 shiftTimeFrom.second),
+#                                       datetime__lt=self.datetime,
+#                                       status=self.IN)
+#             if len(ins) == 0:
+#                 Attendance.markAttendance(self.employee, self.datetime)

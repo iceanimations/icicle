@@ -19,6 +19,9 @@ def rename_photo(instance, name):
     return 'home/employee/photo/{}.{}'.format(instance.pk, name.split('.')[-1])
 
 class Employee(models.Model):
+    
+    SHIFT_GRACE_TIME = 2
+    
     name = models.CharField(max_length=50)
     email = models.CharField(max_length=50, null=True, blank=True, unique=True)
     photo = models.ImageField(upload_to=rename_photo, blank=True)
@@ -38,8 +41,6 @@ class Employee(models.Model):
                               through='attendance.EmployeeShift')
     designation = models.ManyToManyField(Designation,
                                          through='EmployeeDesignation')
-    weekend = models.ManyToManyField('attendance.Weekend',
-                                     through='attendance.EmployeeWeekend')
     
     def __str__(self):
         return self.name
@@ -53,14 +54,17 @@ class Employee(models.Model):
         empDept = EmployeeDepartment.lastDept(self)
         if empDept: return empDept.dept
         
-    def currentWeekend(self):
-        empWeekend = apps.get_model('attendance', 'EmployeeWeekend'
-                                    ).lastWeekend(self)
-        if empWeekend: return empWeekend.weekend
+    def currentWeekend(self, optional=False):
+        return self.currentShift().weekend(optional)
+        
+        
         
     def currentShift(self):
+        #TODO: when no shift, get it from dept, company
         empShift = apps.get_model('attendance', 'EmployeeShift').lastShift(self)
-        if empShift: return empShift.shift
+        if empShift:
+            return empShift.shift
+        return self.currentDept().shift
         
     def currentDesignation(self):
         empDesignation = EmployeeDesignation.lastDesignation(self)
@@ -103,6 +107,11 @@ class Employee(models.Model):
         
     def totalCurrentOrLastPeriod(self):
         pass
+    
+    def isShiftOngoing(self):
+        shift = self.currentShift()
+        if shift:
+            shift.timeFrom
         
     def code(self):
         lastPeriod = self.lastPeriod()
@@ -140,8 +149,6 @@ class Department(models.Model):
                                    on_delete=models.SET_NULL)
     parent = models.ForeignKey('self', null=True, blank=True,
                                on_delete=models.SET_NULL)
-    weekend = models.ForeignKey('attendance.Weekend', null=True, blank=True,
-                                on_delete=models.SET_NULL)
     
     def __str__(self):
         return self.name
@@ -231,3 +238,11 @@ class Project(models.Model):
     
     def __str__(self):
         return self.name
+    
+class Company():
+    #TODO: add shift, weekend
+    pass
+
+class Group():
+    #TODO: group of employees to assign weekend, shift etc
+    pass
