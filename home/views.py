@@ -8,15 +8,20 @@ import json
 
 
 def home(request):
-    if not auth.isLoggedIn(request):
-        return redirect('/login')
-    else:
-        user = loggedInUser(request)
-        if user.isActive():
-            return render(request, 'home/home.html', context={'user': user})
+    try: # deal the situation when user logged in but got deleted from database
+        if not auth.isLoggedIn(request):
+            return redirect('/login')
         else:
-            return HttpResponse('Account created for %s!'%user.name +
-                                ' Please consult HR for activation.')
+            user = loggedInUser(request)
+            if user.isActive():
+                return render(request, 'home/home.html', context={'user': user})
+            else:
+                return HttpResponse('Account created for %s!'%user.name +
+                                    ' Please consult HR for activation.')
+    except:
+        response = redirect('/login')
+        response.delete_cookie('user')
+        return response
             
 def loggedInUser(request):
     cookie = request.COOKIES.get('user')

@@ -75,6 +75,7 @@ class LeaveRequest(models.Model):
         return self.attendance.employee.name +' - '+ str(self.attendance.date)
 
 class Day(models.Model):
+    use_for_related_fields = True
     name = models.CharField(max_length=20)
     
     def __str__(self):
@@ -115,9 +116,10 @@ class Shift(models.Model):
     def weekend(self, optional=False):
         days = Day.objects.all()
         if not optional:
-            return days.difference(self.days)
-        return days.difference(self.dayofshift_set.filter(status=DayOfShift.ON
-                                ).values_list('day', flat=True))
+            return set(days).difference(self.days.all())
+        return set(days).difference(
+                (sday.day for sday in self.dayofshift_set.filter(
+                        status=DayOfShift.ON)))
         
     def timeRange(self, day):
         day = self.dayofshift_set.filter(day__name=day)
@@ -125,6 +127,7 @@ class Shift(models.Model):
             return day[0].timeFrom, day[0].timeTo, day[0].isTimeToNextDay
     
 class DayOfShift(models.Model):
+    use_for_related_fields = True
     ON = 'on'
     OPT = 'opt'
     
@@ -200,9 +203,43 @@ class Session(models.Model):
                                   
     def splitable_save(self):
         # split the session at shift start time
-        if self.inTime:
-            pass
-        self.save()
+        if self.outTime is None:
+            self.save()
+            return
+        date_counter = self.inTime.date()
+        start_times = []
+        print(self.inTime, self.outTime)
+        print(date_counter, self.outTime.date())
+        while date_counter <= self.outTime.date():
+            time = self.employee.shiftStartingTime(date_counter.strftime('%A'))
+            start_time = datetime(
+                     date_counter.year,
+                     date_counter.month, date_counter.day,
+                     time.hour, time.minute, time.second,
+                     tzinfo=pytz.timezone(settings.TIME_ZONE))
+            if start_time > self.inTime and start_time < self.outTime:
+                start_times.append(start_time)
+            date_counter += timedelta(days=1)
+        if start_times:
+            outTime = self.outTime
+            outType = self.outType
+            self.outTime = start_times[0] - timedelta(seconds=1)
+            self.outType = self.COMPUTED
+            self.save()
+            if len(start_times) > 1:
+                Session(employee=self.employee,
+                        inTime=start_times[0],
+                        inType=self.COMPUTED,
+                        outTime=start_times[1] - timedelta(seconds=1),
+                        outType=self.COMPUTED).save()
+            Session(employee=self.employee,
+                    inTime=start_times[-1],
+                    inType=self.COMPUTED,
+                    outTime=outTime,
+                    outType=outType).save()
+            
+        
+       
     
 
 class Entry(models.Model):

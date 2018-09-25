@@ -64,8 +64,8 @@ def login(request):
         if errors:
             return showLoginForm(request, errors)
         
-def logout(request):
-    if auth.isLoggedIn(request):
+def logout(request, force=False):
+    if auth.isLoggedIn(request) or force:
         response = redirect('/login')
         response.delete_cookie('user')
         return response

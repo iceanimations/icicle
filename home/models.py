@@ -53,13 +53,20 @@ class Employee(models.Model):
         if empDept: return empDept.dept
         
     def currentWeekend(self, optional=False):
-        return self.currentShift().weekend(optional)
+        shift = self.currentShift()
+        if shift:
+            return shift.weekend(optional)
 
     def currentShift(self):
         empShift = apps.get_model('attendance', 'EmployeeShift').lastShift(self)
         if empShift:
-            return empShift.shift
-        return self.currentDept().shift
+            shift = empShift.shift
+        else:
+            dept = self.currentDept()
+            if dept:
+                shift = dept.shift
+            else: return
+        return shift
         
     def currentDesignation(self):
         empDesignation = EmployeeDesignation.lastDesignation(self)
@@ -100,8 +107,14 @@ class Employee(models.Model):
         if lastPeriod:
             return lastPeriod.dateTo
     
-    def shiftStartingTime(self, day=date.today().strftime('%A')):
-        pass
+    def shiftStartingTime(self, day=None):
+        if day is None: day = date.today().strftime('%A')
+        shift = self.currentShift()
+        if shift:
+            try:
+                return shift.dayofshift_set.get(day__name=day).timeFrom
+            except apps.get_model('attendance', 'DayOfShift').DoesNotExist:
+                pass
     
 #     def isShiftOngoing(self):
 #         shift = self.currentShift()
