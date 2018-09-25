@@ -99,19 +99,19 @@ class Employee(models.Model):
         lastPeriod = self.lastPeriod()
         if lastPeriod:
             return lastPeriod.dateTo
-        
-    def totalCurrentOrLastPeriod(self):
+    
+    def shiftStartingTime(self, day=date.today().strftime('%A')):
         pass
     
-    def isShiftOngoing(self):
-        shift = self.currentShift()
-        if shift:
-            try:
-                start, end, crossing = shift.timeRange(date.today(
-                                                        ).strftime('%A'))
-            except TypeError:
-                return False
-            shift.AHEAD_PERIOD
+#     def isShiftOngoing(self):
+#         shift = self.currentShift()
+#         if shift:
+#             try:
+#                 start, end, crossing = shift.timeRange(date.today(
+#                                                         ).strftime('%A'))
+#             except TypeError:
+#                 return False
+#             shift.AHEAD_PERIOD
         
     def code(self):
         lastPeriod = self.lastPeriod()

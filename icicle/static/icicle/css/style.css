@@ -2,6 +2,7 @@ body {
 	font-family:Arial, Helvetica, sans-serif;
 	font-size: 12pt;
 	margin: 0px;
+	background-color: #dddddd;
 }
 
 .red {
@@ -32,7 +33,7 @@ form select:focus {
 form input[type=submit]:hover {
 	background-color: #0070a0;
 	color: white;
-	cursor:hand;
+	cursor:pointer;
 }
 
 button::-moz-focus-inner {
@@ -72,9 +73,8 @@ img {
 	position: fixed;
 	left: 0;
 	bottom: 0;
-	text-align: center;
 	width: 100%;
-	min-height: 50px;
+	height: 50px;
 }
 
 .navbar-button:hover, .theme-color {
@@ -95,7 +95,6 @@ img {
 	margin: 0 auto;
 	width: 60%;
 	height: 100%;
-	background-color: #dddddd;
 	padding: 5px;
 }
 

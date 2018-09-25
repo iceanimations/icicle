@@ -3,6 +3,8 @@ from __future__ import unicode_literals
 from django.db import models
 from datetime import datetime, date, timedelta
 from django.apps import apps
+import pytz
+from icicle import settings
 
 class LeaveType(models.Model):
     SICK_LEAVE = 'sickLeave'
@@ -54,8 +56,8 @@ class Attendance(models.Model):
         return str(self.date) + ' - ' + self.employee.name
     
     @classmethod
-    def markAttendance(cls, employee):
-        Attendance(employee=employee, status=cls.PRESENT).save()
+    def markAttendance(cls, employee, status):
+        Attendance(employee=employee, status=status).save()
 
 class LeaveRequest(models.Model):
     attendance = models.ForeignKey(Attendance, null=True, blank=True,
@@ -103,7 +105,6 @@ class EmployeeShift(models.Model):
                                         
 class Shift(models.Model):
     #when emp marks attendance AHEAD_PERIOD hours before the shift start time
-    AHEAD_PERIOD = 2
     
     name = models.CharField(max_length=30)
     days = models.ManyToManyField(Day, through='DayOfShift')
@@ -180,8 +181,12 @@ class Session(models.Model):
     outType = models.CharField(max_length=15, blank=True)
     
     def __str__(self):
-        return (self.employee.name + '(' + str(self.intime) +
-                '-' + str(self.outtime) + ')')
+        return (self.employee.name + '(' + str(self.inTime) +
+                '-' + str(self.outTime) + ')')
+        
+    def isComplete(self):
+        # returns true if outTime is not None
+        return bool(self.outTime)
     
     @classmethod
     def previousSession(cls, employee, dt):
@@ -192,6 +197,12 @@ class Session(models.Model):
     def nextSession(cls, employee, dt):
         return cls.objects.filter(employee=employee, inTime__gte=dt
                                   ).order_by('inTime').first()
+                                  
+    def splitable_save(self):
+        # split the session at shift start time
+        if self.inTime:
+            pass
+        self.save()
     
 
 class Entry(models.Model):
@@ -206,17 +217,21 @@ class Entry(models.Model):
     
     uid = models.IntegerField()
     tid = models.IntegerField()
-    date = models.DateField(max_length=8)
-    time = models.TimeField(max_length=6)
+    # add timezone info, if server and user are in diff timezones
+    date = models.DateField()
+    time = models.TimeField()
     
     @property
     def datetime(self):
+        # datebase time is in utc, so add timezone info to self.datetime
+        # for comparison with database time
         return datetime(self.date.year,
                         self.date.month,
                         self.date.day,
                         self.time.hour,
                         self.time.minute,
-                        self.time.second)
+                        self.time.second,
+                        tzinfo=pytz.timezone(settings.TIME_ZONE))
     
     @property
     def status(self):
@@ -224,56 +239,56 @@ class Entry(models.Model):
     
     @property
     def employee(self):
+        # analyse employeeperiod__code param
         return apps.get_model('home', 'Employee'
-                              ).objects.filter(code=self.uid)
+                              ).objects.filter(employeeperiod__code=self.uid
+                                               ).first()
     
-    def save(self, typ=Session.BIOMETRIC):
+    def save(self, *args, typ=Session.BIOMETRIC, **kwargs):
         if self.employee is None:
-            return
+            raise ValueError('No Employee')
         if self.tid not in self.TID_TO_INOUT:
-            return
+            raise ValueError('No TID')
+        
         if self.status == self.IN:
             ps = Session.previousSession(self.employee, self.datetime)
             if ps:
                 if ps.outTime is None:
                     ps.outTime = self.datetime - timedelta(seconds=1)
                     ps.outType = Session.COMPUTED
-                    ps.save()
-                    ns = Session.nextSession(employee=self.employee,
-                                             inTime=self.datetime,
-                                             inType=typ)
+                    ps.splitable_save()
+                    ns = Session.nextSession(self.employee,
+                                             self.datetime)
                     if ns:
                         if ns.inType == Session.COMPUTED:
                             ns.inTime = self.datetime
                             ns.inType = typ
-                            ns.save()
+                            ns.splitable_save()
                         else:
                             s = Session(employee=self.employee, inTime=self.datetime,
                                 inType=typ)                    
                             s.outTime = ns.inTime - timedelta(seconds=1)
                             s.outType = Session.COMPUTED
-                            s.save()
+                            s.splitable_save()
                     else:
                         Session(employee=self.employee, inTime=self.datetime,
-                                inType=typ).save()
+                                inType=typ).splitable_save()
                 else:
                     if ps.outTime > self.datetime:
                         Session(employee=self.employee, inTime=self.datetime,
                                 inType=typ, outTime=ps.outTime,
-                                outType=ps.outType).save()
+                                outType=ps.outType).splitable_save()
                         ps.outTime = self.datetime - timedelta(seconds=1)
                         if ps.outType != Session.COMPUTED:
                             ps.outType = Session.COMPUTED
-                        ps.save()
+                        ps.splitable_save()
                     else:
-                        ns = Session.nextSession(employee=self.employee,
-                                             inTime=self.datetime,
-                                             inType=typ)
+                        ns = Session.nextSession(self.employee, self.datetime)
                         if ns:
                             if ns.inType == Session.COMPUTED:
                                 ns.inTime = self.datetime
                                 ns.inType = typ
-                                ns.save()
+                                ns.splitable_save()
                             else:
                                 s = Session(employee=self.employee,
                                             inTime=self.datetime,
@@ -281,53 +296,52 @@ class Entry(models.Model):
                                 
                                 s.outTime = ns.inTime - timedelta(seconds=1)
                                 s.outType = Session.COMPUTED
-                                s.save()
+                                s.splitable_save()
                         else:
                             Session(employee=self.employee,
                                             inTime=self.datetime,
-                                            inType=typ).save()
+                                            inType=typ).splitable_save()
                             
                             
-            else:
-                ns = Session.nextSession(employee=self.employee,
-                                         inTime=self.datetime)
+            else: # when no previous session exist
+                ns = Session.nextSession(self.employee, self.datetime)
                 if ns:
                     if ns.inType == Session.COMPUTED:
                         ns.inTime = self.datetime
                         ns.inType = typ
-                        ns.save()
+                        ns.splitable_save()
                     else:
                         Session(employee=self.employee, inTime=self.datetime,
                                 inType=typ,
                                 outTime=ns.inTime - timedelta(seconds=1),
-                                outType=Session.COMPUTED).save()
+                                outType=Session.COMPUTED).splitable_save()
                 else:
                     Session(employee=self.employee, inTime=self.datetime,
-                            inType=typ).save()
-        else:
+                            inType=typ).splitable_save()
+        else: # when Entry in out
             ps = Session.previousSession(self.employee, self.datetime)
             if ps:
-                if ps.outType is None or ps.outType == Session.COMPUTED:
+                if ps.outTime is None or ps.outType == Session.COMPUTED:
                     ps.outTime = self.datetime
                     ps.outType = typ
-                    ps.save()
+                    ps.splitable_save()
                 else:
                     if ps.outTime < self.datetime:
                         Session(employee=self.employee, outTime=self.datetime,
                                 outType=typ,
                                 inTime=self.datetime - timedelta(seconds=1),
-                                inType=Session.COMPUTED).save()
+                                inType=Session.COMPUTED).splitable_save()
                     else:
                         Session(employee=self.employee,
                                 inTime=self.datetime + timedelta(seconds=1),
                                 inType=Session.COMPUTED,
-                                outTime=ps.outTime, outType=ps.outType).save()
+                                outTime=ps.outTime, outType=ps.outType).splitable_save()
                         ps.outTime = self.datetime
                         ps.outType = typ
-                        ps.save()
+                        ps.splitable_save()
             else:
                 Session(employee=self.employee, outTime=self.datetime,
                         outType=typ,
                         inTime=self.datetime - timedelta(seconds=1),
-                        inType=Session.COMPUTED).save()
-        super(Entry, self).save()
+                        inType=Session.COMPUTED).splitable_save()
+        super(Entry, self).save(*args, **kwargs)
