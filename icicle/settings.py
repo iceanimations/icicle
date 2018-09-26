@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
 import os
-from django.utils import timezone
+import pytz
 
 #AD Authentication
 DOMAIN = 'iceanimations.com'
@@ -117,7 +117,9 @@ AUTH_PASSWORD_VALIDATORS = [
 LANGUAGE_CODE = 'en-us'
 
 # works only when server is running locally (same timezone as users')
-TIME_ZONE = timezone.get_current_timezone_name()
+TIME_ZONE = 'Asia/Karachi'
+
+localize = pytz.timezone(TIME_ZONE).localize
 
 USE_I18N = True
 

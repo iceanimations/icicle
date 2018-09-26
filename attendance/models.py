@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 from django.db import models
 from datetime import datetime, date, timedelta
+from django.utils import timezone
 from django.apps import apps
 import pytz
 from icicle import settings
@@ -50,14 +51,16 @@ class Attendance(models.Model):
     date = models.DateField(auto_now_add=True)
     employee = models.ForeignKey('home.Employee', null=True, blank=True,
                                  on_delete=models.SET_NULL)
-    status = models.CharField(max_length=20)
-    #TODO: get shift on a given day, employee, property or method
+    status = models.CharField(max_length=20, blank=True)
     def __str__(self):
         return str(self.date) + ' - ' + self.employee.name
     
     @classmethod
-    def markAttendance(cls, employee, status):
-        Attendance(employee=employee, status=status).save()
+    def markAttendance(cls, employee, status, dt):
+        a = Attendance.objects.get_or_create(employee=employee,
+                                             date=dt)[0]
+        a.status = status
+        a.save()
 
 class LeaveRequest(models.Model):
     attendance = models.ForeignKey(Attendance, null=True, blank=True,
@@ -121,10 +124,41 @@ class Shift(models.Model):
                 (sday.day for sday in self.dayofshift_set.filter(
                         status=DayOfShift.ON)))
         
-    def timeRange(self, day):
-        day = self.dayofshift_set.filter(day__name=day)
-        if day:
-            return day[0].timeFrom, day[0].timeTo, day[0].isTimeToNextDay
+    def timeRange(self, dt):
+        today = dt.strftime('%A')
+        tr = self.dayofshift_set.filter(day__name=today).values_list(
+                                    'timeFrom', 'timeTo', 'isTimeToNextDay')
+        
+        if tr:
+            tr = tr[0]
+            start_time = settings.localize(datetime(dt.year,
+                                dt.month, dt.day,
+                                 tr[0].hour, tr[0].minute, tr[0].second))
+            end_time = settings.localize(datetime(
+                                dt.year, dt.month, dt.day,
+                                tr[1].hour, tr[1].minute, tr[1].second))
+            if tr[2]:
+                end_time += timedelta(days=1)
+            
+            if dt >= start_time and dt < end_time:
+                return (start_time, end_time)
+        
+        yesterday = (dt - timedelta(days=1)).strftime('%A')
+        tr = self.dayofshift_set.filter(day__name=yesterday).values_list(
+                                    'timeFrom', 'timeTo', 'isTimeToNextDay')
+        if tr:
+            tr = tr[0]
+            start_time = settings.localize(datetime(dt.year,
+                                dt.month, dt.day,
+                                 tr[0].hour, tr[0].minute, tr[0].second))
+            end_time = settings.localize(datetime(
+                                dt.year, dt.month, dt.day,
+                                tr[1].hour, tr[1].minute, tr[1].second))
+            if tr[2]:
+                end_time += timedelta(days=1)
+            
+            if dt >= start_time and dt < end_time:
+                return (start_time, end_time)
     
 class DayOfShift(models.Model):
     use_for_related_fields = True
@@ -139,7 +173,8 @@ class DayOfShift(models.Model):
     timeFrom = models.TimeField(verbose_name='From')
     timeTo = models.TimeField(verbose_name='To')
     # when timeTo crosses day boundary
-    isTimeToNextDay = models.BooleanField(verbose_name='Crossing Date?')
+    isTimeToNextDay = models.BooleanField(verbose_name='Crossing Date?',
+                                          default=False)
     status = models.CharField(max_length=3, choices=STATUS_CHOICES)
     
 class Ramzan(models.Model):
@@ -183,6 +218,12 @@ class Session(models.Model):
     inType = models.CharField(max_length=15, blank=True)
     outType = models.CharField(max_length=15, blank=True)
     
+    def localInTime(self):
+        return timezone.localtime(self.inTime)
+    
+    def localOutTime(self):
+        return timezone.localtime(self.outTime)
+    
     def __str__(self):
         return (self.employee.name + '(' + str(self.inTime) +
                 '-' + str(self.outTime) + ')')
@@ -206,22 +247,24 @@ class Session(models.Model):
         if self.outTime is None:
             self.save()
             return
-        date_counter = self.inTime.date()
+        date_counter = self.localInTime().date()
         start_times = []
-        print(self.inTime, self.outTime)
-        print(date_counter, self.outTime.date())
-        while date_counter <= self.outTime.date():
+        while date_counter <= self.localOutTime().date():
             time = self.employee.shiftStartingTime(date_counter.strftime('%A'))
+            if not time:
+                date_counter += timedelta(days=1)
+                continue
             start_time = datetime(
                      date_counter.year,
                      date_counter.month, date_counter.day,
-                     time.hour, time.minute, time.second,
-                     tzinfo=pytz.timezone(settings.TIME_ZONE))
-            if start_time > self.inTime and start_time < self.outTime:
+                     time.hour, time.minute, time.second)
+            tz = pytz.timezone(settings.TIME_ZONE)
+            start_time = tz.localize(start_time)
+            if start_time > self.localInTime() and start_time < self.localOutTime():
                 start_times.append(start_time)
             date_counter += timedelta(days=1)
         if start_times:
-            outTime = self.outTime
+            outTime = self.localOutTime()
             outType = self.outType
             self.outTime = start_times[0] - timedelta(seconds=1)
             self.outType = self.COMPUTED
@@ -237,7 +280,20 @@ class Session(models.Model):
                     inType=self.COMPUTED,
                     outTime=outTime,
                     outType=outType).save()
-            
+        else:
+            self.save()
+    
+    def save(self):
+        #TODO: check for day crossing shift
+        s = self.employee.currentShift()
+        if s:
+            lit = self.localInTime()
+            tr = s.timeRange(lit)
+            if tr:
+                Attendance.markAttendance(self.employee,
+                                          Attendance.PRESENT,
+                                          tr[0].date())
+        super().save()
         
        
     
@@ -262,13 +318,14 @@ class Entry(models.Model):
     def datetime(self):
         # datebase time is in utc, so add timezone info to self.datetime
         # for comparison with database time
-        return datetime(self.date.year,
+        dt = datetime(self.date.year,
                         self.date.month,
                         self.date.day,
                         self.time.hour,
                         self.time.minute,
-                        self.time.second,
-                        tzinfo=pytz.timezone(settings.TIME_ZONE))
+                        self.time.second)
+        tz = pytz.timezone(settings.TIME_ZONE)
+        return tz.localize(dt)
     
     @property
     def status(self):

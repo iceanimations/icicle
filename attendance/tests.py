@@ -1,27 +1,44 @@
 from django.test import TestCase
 from . import models
 from home import models as home_models
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, time as dTime
 import time
+import pytz
+from icicle import settings
 
 # Create your tests here.
-class SessionTestCase(TestCase):
-    
+
+class BaseTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         e = home_models.Employee.objects.create(username='qurban.ali',
                                                 name='Qurban Ali')
         e.activate(date.today(), 9600242)
+        s = models.Shift(name='Normal')
+        s.save()
+        for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']:
+            d = models.Day(name=day)
+            d.save()
+            if day == 'Sunday': continue
+            status = models.DayOfShift.ON
+            if day == 'Saturday': status = models.DayOfShift.OPT
+            dos = models.DayOfShift(shift=s, day=d, timeFrom=dTime(22, 0),
+                                    timeTo=dTime(6, 0), status=status,
+                                    isTimeToNextDay=True)
+            dos.save()
+        models.EmployeeShift.objects.create(employee=e, shift=s)
+            
+        
     
     def create_in(self, **kwargs):
-        models.Entry(uid=9600242, tid=1, date=date.today(),
-                                    time=datetime.time(datetime.now() + timedelta(**kwargs))).save()
+        dt = datetime(2018, 9, 26, 23) + timedelta(**kwargs)
+        models.Entry(uid=9600242, tid=1, date=dt.date(), time=dt.time()).save()
                                     
     def create_out(self, **kwargs):
-        models.Entry(uid=9600242, tid=2, date=date.today(),
-                                    time=datetime.time(datetime.now() +
-                                                       timedelta
-                                                       (**kwargs))).save()
+        dt = datetime(2018, 9, 26, 23) + timedelta(**kwargs)
+        models.Entry(uid=9600242, tid=2, date=dt.date(), time=dt.time()).save()
+                       
+class SessionTestCase(BaseTestCase):
 
     def test_out_is_null(self):
         self.create_in()
@@ -33,25 +50,24 @@ class SessionTestCase(TestCase):
         self.assertTrue(s.outType == '')
         
     def test_in_out_duration(self):
-        duration = 1
+        duration = 2
         self.create_in()
         self.create_out(hours=duration)
-        s = models.Session.objects.all()[0]
-        # test if the duration is same as specified
-        self.assertTrue((s.outTime - s.inTime) == timedelta(hours=duration))
+        s = models.Session.objects.all()
         # test if there is only one session
-        self.assertEqual(len(models.Session.objects.all()), 1)
+        self.assertEqual(len(s), 1)
         # test if there are only two Entry objects
         self.assertEqual(len(models.Entry.objects.all()), 2)
+        # test if the duration is same as specified
+        self.assertTrue((s[0].outTime - s[0].inTime) == timedelta(hours=duration))
         # test for session in out types
-        self.assertTrue(s.inType == models.Session.BIOMETRIC)
-        self.assertTrue(s.outType == models.Session.BIOMETRIC)
+        self.assertTrue(s[0].inType == models.Session.BIOMETRIC)
+        self.assertTrue(s[0].outType == models.Session.BIOMETRIC)
         
         
     def test_consecutive_ins(self):
         self.create_in()
-        time.sleep(2)
-        self.create_in()
+        self.create_in(minutes=10)
         s = models.Session.objects.all().order_by('inTime')
         # test if there are two Session objects
         self.assertTrue(len(s) == 2)
@@ -81,6 +97,7 @@ class SessionTestCase(TestCase):
         self.create_in()
         self.create_out(hours=duration)
         self.create_in(minutes=30)
+
         e = models.Entry.objects.all()
         s = models.Session.objects.all().order_by('inTime')
         self.assertEqual(len(e), 3)
@@ -114,8 +131,27 @@ class SessionTestCase(TestCase):
     
     def test_days_long_session(self):
         self.create_in()
-        self.create_out(days=1, hours=1)
+        self.create_out(days=10, hours=1)
         e = models.Entry.objects.all()
         s = models.Session.objects.all().order_by('inTime')
         self.assertEqual(len(e), 2)
-        self.assertEqual(len(s), 2)
+        self.assertEqual(len(s), 3)
+        tz = pytz.timezone(settings.TIME_ZONE)
+        self.assertEqual(s.last().inTime, tz.localize(datetime(2018, 10, 6, 22)))
+        self.assertEqual(s.first().outTime, tz.localize(datetime(2018, 9, 27, 21, 59, 59)))
+
+class AttendanceTestCase(BaseTestCase):
+    
+    def test_attendance(self):
+        self.create_in()
+        self.create_out(hours=2)
+        a = models.Attendance.objects.all()
+        self.assertEqual(len(a), 1)
+    
+    def test_in_after_endtime(self):
+        self.create_in(hours=9)
+        self.create_out(hours=11)
+        a = models.Attendance.objects.all()
+        self.assertEqual(len(a), 0)
+    
+    
