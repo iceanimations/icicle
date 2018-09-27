@@ -47,8 +47,9 @@ class Attendance(models.Model):
     ABSENT = 'absent'
     HOLIDAY = 'holiday'
     WEEKEND = 'weekend'
+    LEAVE = 'leave'
     
-    date = models.DateField(auto_now_add=True)
+    date = models.DateField()
     employee = models.ForeignKey('home.Employee', null=True, blank=True,
                                  on_delete=models.SET_NULL)
     status = models.CharField(max_length=20, blank=True)
@@ -117,18 +118,19 @@ class Shift(models.Model):
         return self.name
     
     def weekend(self, optional=False):
-        days = Day.objects.all()
-        if not optional:
-            return set(days).difference(self.days.all())
-        return set(days).difference(
-                (sday.day for sday in self.dayofshift_set.filter(
-                        status=DayOfShift.ON)))
+        we = []
+        off = [d.day for d in self.dayofshift_set.filter(status=DayOfShift.OFF)]
+        opt = [d.day for d in self.dayofshift_set.filter(status=DayOfShift.OPT)]
+        if off:
+            for of in off: we.append(of)
+        if optional and opt:
+            for op in opt: we.append(op)
+        return we
         
     def timeRange(self, dt):
         today = dt.strftime('%A')
         tr = self.dayofshift_set.filter(day__name=today).values_list(
                                     'timeFrom', 'timeTo', 'isTimeToNextDay')
-        
         if tr:
             tr = tr[0]
             start_time = settings.localize(datetime(dt.year,
@@ -163,10 +165,13 @@ class Shift(models.Model):
 class DayOfShift(models.Model):
     use_for_related_fields = True
     ON = 'on'
+    OFF = 'off' # adding this to force to specify range
     OPT = 'opt'
     
     STATUS_CHOICES = ((ON, 'On'),
-                      (OPT, 'Optional'))
+                      (OPT, 'Optional'),
+                      (OFF, 'Off')
+                      )
     
     shift = models.ForeignKey(Shift, null=True, on_delete=models.SET_NULL)
     day = models.ForeignKey(Day, null=True, on_delete=models.SET_NULL)
@@ -177,24 +182,8 @@ class DayOfShift(models.Model):
                                           default=False)
     status = models.CharField(max_length=3, choices=STATUS_CHOICES)
     
-class Ramzan(models.Model):
-    dateFrom = models.DateField(verbose_name='Starts From')
-    dateTo = models.DateField(verbose_name='Ends On', null=True, blank=True)
-    
-    @classmethod
-    def isRamzan(cls, date=None):
-        if date is None:
-            date = date.today()
-        for obj in cls.objects.all():
-            if obj.dateTo is None:
-                obj.dateTo = obj.dateFrom + timedelta(days=30)
-                 
-            if date >= obj.dateFrom and date <= obj.dateTo:
-                return True
-        return False
-    
     def __str__(self):
-        return str(self.dateFrom) +' - '+ str(self.dateTo)
+        return ', '.join([self.day.name])
 
 class Holiday(models.Model):
     name = models.CharField(max_length=30)
@@ -269,27 +258,36 @@ class Session(models.Model):
             self.outTime = start_times[0] - timedelta(seconds=1)
             self.outType = self.COMPUTED
             self.save()
-            if len(start_times) > 1:
+            if (len(start_times) > 1 and self.localInTime() < start_times[0]
+                and not self.employee.currentShift().timeRange(
+                                                        self.localInTime())):
                 Session(employee=self.employee,
                         inTime=start_times[0],
                         inType=self.COMPUTED,
                         outTime=start_times[1] - timedelta(seconds=1),
                         outType=self.COMPUTED).save()
-            Session(employee=self.employee,
-                    inTime=start_times[-1],
-                    inType=self.COMPUTED,
-                    outTime=outTime,
-                    outType=outType).save()
+                if outType != Session.COMPUTED:
+                    Session(employee=self.employee,
+                            inTime=start_times[-1],
+                            inType=self.COMPUTED,
+                            outTime=outTime,
+                            outType=outType).save()
+            else: 
+                Session(employee=self.employee,
+                        inTime=start_times[-1],
+                        inType=self.COMPUTED,
+                        outTime=outTime,
+                        outType=outType).save()
         else:
             self.save()
     
     def save(self):
-        #TODO: check for day crossing shift
         s = self.employee.currentShift()
         if s:
             lit = self.localInTime()
             tr = s.timeRange(lit)
             if tr:
+                # check for 
                 Attendance.markAttendance(self.employee,
                                           Attendance.PRESENT,
                                           tr[0].date())

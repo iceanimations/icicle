@@ -6,7 +6,7 @@ from .models import *
 # Register your models here.
 
 
-admin.site.register([Day, Ramzan, Holiday, Session, LeaveType,
+admin.site.register([Day, Holiday, Session, LeaveType,
                      Attendance, LeaveRequest])
 
 class DayOfShiftInline(admin.TabularInline):

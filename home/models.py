@@ -115,16 +115,6 @@ class Employee(models.Model):
                 return shift.dayofshift_set.get(day__name=day).timeFrom
             except apps.get_model('attendance', 'DayOfShift').DoesNotExist:
                 pass
-    
-#     def isShiftOngoing(self):
-#         shift = self.currentShift()
-#         if shift:
-#             try:
-#                 start, end, crossing = shift.timeRange(date.today(
-#                                                         ).strftime('%A'))
-#             except TypeError:
-#                 return False
-#             shift.AHEAD_PERIOD
         
     def code(self):
         lastPeriod = self.lastPeriod()
@@ -202,7 +192,7 @@ class EmployeeDesignation(models.Model):
     dateFrom = models.DateField(auto_now_add=True, verbose_name='From',
                                 null=True)
     dateTo = models.DateField(verbose_name='To', blank=True, null=True)
-    
+
     def setLastDesignationDateTo(self):
         lastDesignation = EmployeeDesignation.lastDesignation(self.employee)
         if lastDesignation:
