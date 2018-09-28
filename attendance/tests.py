@@ -4,7 +4,7 @@ from home import models as home_models
 from datetime import datetime, date, timedelta, time as dTime
 import time
 import pytz
-from icicle import settings
+from icicle import settings, utilities
 
 # Create your tests here.
 
@@ -176,3 +176,11 @@ class AttendanceTestCase(TestCase):
         self.create_out(days=10)
         a = models.Attendance.objects.all()
         self.assertEqual(len(a), 4)
+        
+class UtilitiesTestCase(TestCase):
+    
+    def test_timer_creation(self):
+        pass
+    
+    def hello(self):
+        print('hello world')
