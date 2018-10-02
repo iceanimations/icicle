@@ -176,11 +176,3 @@ class AttendanceTestCase(TestCase):
         self.create_out(days=10)
         a = models.Attendance.objects.all()
         self.assertEqual(len(a), 4)
-        
-class UtilitiesTestCase(TestCase):
-    
-    def test_timer_creation(self):
-        pass
-    
-    def hello(self):
-        print('hello world')
