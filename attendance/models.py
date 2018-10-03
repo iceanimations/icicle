@@ -7,6 +7,9 @@ from django.apps import apps
 import pytz
 from icicle import settings
 
+#TODO: consider making ForeignKey ManyToManyField whereever possible
+#TODO: models optimization through inheritance
+
 class LeaveType(models.Model):
     SICK_LEAVE = 'sickLeave'
     CASUAL_LEAVE = 'casualLeave'
@@ -126,7 +129,7 @@ class Shift(models.Model):
         if optional and opt:
             for op in opt: we.append(op)
         return we
-        
+
     def timeRange(self, dt):
         today = dt.strftime('%A')
         tr = self.dayofshift_set.filter(day__name=today).values_list(
@@ -162,6 +165,9 @@ class Shift(models.Model):
             if dt >= start_time and dt < end_time:
                 return (start_time, end_time)
     
+    def allEmployees(self):
+        pass
+    
 class DayOfShift(models.Model):
     use_for_related_fields = True
     ON = 'on'
@@ -181,9 +187,15 @@ class DayOfShift(models.Model):
     isTimeToNextDay = models.BooleanField(verbose_name='Crossing Date?',
                                           default=False)
     status = models.CharField(max_length=3, choices=STATUS_CHOICES)
-    
+
     def __str__(self):
         return ', '.join([self.day.name])
+    
+    def save(self):
+        super().save()
+    
+    def delete(self):
+        super().delete()
 
 class Holiday(models.Model):
     name = models.CharField(max_length=30)

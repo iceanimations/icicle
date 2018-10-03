@@ -146,8 +146,8 @@ class EmployeePeriod(models.Model):
 
 class Department(models.Model):
     name = models.CharField(max_length=30, unique=True)
-    shift = models.ForeignKey('attendance.Shift', null=True, blank=True,
-                              on_delete=models.SET_NULL)
+    shift = models.ManyToManyField('attendance.Shift',
+                                   through='DepartmentShift')
     supervisor = models.ForeignKey(Employee, null=True, blank=True,
                                    on_delete=models.SET_NULL)
     parent = models.ForeignKey('self', null=True, blank=True,
@@ -155,6 +155,32 @@ class Department(models.Model):
     
     def __str__(self):
         return self.name
+
+#TODO: it should live in attendance
+#TODO: create ui
+class DepartmentShift(models.Model):
+    dept = models.ForeignKey(Department, null=True, blank=True,
+                             on_delete=models.SET_NULL)
+    shift = models.ForeignKey('attendance.Shift', null=True, blank=True,
+                              on_delete=models.SET_NULL)
+    dateFrom = models.DateField(auto_now_add=True, verbose_name='From',
+                                null=True)
+    dateTo = models.DateField(verbose_name='To', blank=True, null=True)
+    
+    def setLastShiftDateTo(self):
+        lastShift = DepartmentShift.lastShift(self.dept)
+        if lastShift:
+            if lastShift.dateFrom == date.today():
+                lastShift.delete()
+            else:
+                lastShift.dateTo = date.today() - timedelta(1)
+                lastShift.save()
+    
+    @classmethod
+    def lastShift(cls, dept):
+        return DepartmentShift.objects.filter(dept=dept
+                                              ).order_by('dateFrom').last()
+    
     
 class EmployeeDepartment(models.Model):
     employee = models.ForeignKey(Employee, null=True, blank=True,

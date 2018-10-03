@@ -13,7 +13,7 @@ def createTimer(func, tm, repeat=False):
     for _, val in timers.items():
         if (func, tm) == val:
             raise ValueError('A Timer already exists')
-    
+
     now = datetime.datetime.now()
     nxt = datetime.datetime(now.year, now.month, now.day,
                              tm.hour, tm.minute, tm.second, 0)
@@ -37,3 +37,9 @@ def removeTimer(func, tm):
             timer.cancel()
             break
     timers.pop(timer)
+    
+def createTimerCaller():
+    '''
+    this method is called only once, when starting the application
+    '''
+    print ('create timer caller')
