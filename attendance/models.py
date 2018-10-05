@@ -5,7 +5,7 @@ from datetime import datetime, date, timedelta
 from django.utils import timezone
 from django.apps import apps
 import pytz
-from icicle import settings
+from icicle import settings, utilities as utils
 
 #TODO: consider making ForeignKey ManyToManyField whereever possible
 #TODO: models optimization through inheritance
@@ -44,6 +44,11 @@ class LeaveType(models.Model):
     def __str__(self):
         for name, nicename in self.LEAVE_NAME_CHOICES:
             if name == self.name: return nicename
+    
+class AttManager(models.Manager):
+    def get_queryset(self):
+        Attendance.markMissingAttendances()
+        return super().get_queryset()
 
 class Attendance(models.Model):
     PRESENT = 'present'
@@ -58,6 +63,34 @@ class Attendance(models.Model):
     status = models.CharField(max_length=20, blank=True)
     def __str__(self):
         return str(self.date) + ' - ' + self.employee.name
+    
+    objects = AttManager()
+    # use the following manager to prevent recursion in markMissingAttendances
+    objects2 = models.Manager()
+    
+    @classmethod
+    def markMissingAttendances(self):
+        today = date.today()
+        for emp in apps.get_model('home', 'Employee').objects.all():
+            if emp.isActive():
+                dates = Attendance.missingAttendances(emp)
+                
+    @classmethod
+    def missingAttendances(cls, emp):
+        attendances = Attendance.objects2.values_list('date', flat=True
+                                        ).filter(employee=emp
+                                        ).order_by('date')
+        if attendances:
+            # check if shift is ongoing
+            shift = emp.crrentShift()
+            if shift:
+                tr = shift.timeRange(settings.localize(datetime.now()))
+                if tr: includeToday = 0
+                else: includeToday = 1
+                dates = { attendances[0] + timedelta(day)
+                         for day in range((date.today() - attendances[0]
+                                           ).days + includeToday)}
+                #TODO: start here
     
     @classmethod
     def markAttendance(cls, employee, status, dt):
@@ -131,6 +164,10 @@ class Shift(models.Model):
         return we
 
     def timeRange(self, dt):
+        if not isinstance(dt, datetime):
+            raise ValueError('%s must be datetime.datetime object'%dt)
+        if dt.tzinfo is None:
+            raise ValueError('%s must be offset-aware datetime object'%dt)
         today = dt.strftime('%A')
         tr = self.dayofshift_set.filter(day__name=today).values_list(
                                     'timeFrom', 'timeTo', 'isTimeToNextDay')
@@ -165,9 +202,6 @@ class Shift(models.Model):
             if dt >= start_time and dt < end_time:
                 return (start_time, end_time)
     
-    def allEmployees(self):
-        pass
-    
 class DayOfShift(models.Model):
     use_for_related_fields = True
     ON = 'on'
@@ -191,11 +225,18 @@ class DayOfShift(models.Model):
     def __str__(self):
         return ', '.join([self.day.name])
     
-    def save(self):
-        super().save()
-    
-    def delete(self):
-        super().delete()
+    @classmethod
+    def ongoingEmployees(cls):
+        now = datetime.now().time()
+        ongoingDayOfShift = DayOfShift.objects.filter(
+                                    timeFrom__lte=now,
+                                    timeTo__gt=now) 
+        emps = []
+        for shift in list(set([ogdos.shift for ogdos in ongoingDayOfShift])):
+            for emp in apps.get_model('home', 'Employee').objects.all():
+                if emp.currentShift() == shift:
+                    emps.append(emp)
+        return emps
 
 class Holiday(models.Model):
     name = models.CharField(max_length=30)
@@ -299,7 +340,6 @@ class Session(models.Model):
             lit = self.localInTime()
             tr = s.timeRange(lit)
             if tr:
-                # check for 
                 Attendance.markAttendance(self.employee,
                                           Attendance.PRESENT,
                                           tr[0].date())

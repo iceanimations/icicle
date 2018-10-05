@@ -2,8 +2,6 @@
 import os
 import sys
 import threading
-from icicle import utilities as utils
-
 if __name__ == '__main__':
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'icicle.settings')
     try:

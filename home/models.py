@@ -155,6 +155,11 @@ class Department(models.Model):
     
     def __str__(self):
         return self.name
+    
+    def currentShift(self):
+        lastShift = DepartmentShift.lastShift(self)
+        if lastShift:
+            return lastShift.shift
 
 #TODO: it should live in attendance
 #TODO: create ui

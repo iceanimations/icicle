@@ -9,11 +9,6 @@ import threading
 timers = {}
 
 def createTimer(func, tm, repeat=False):
-    # check if it already exists
-    for _, val in timers.items():
-        if (func, tm) == val:
-            raise ValueError('A Timer already exists')
-
     now = datetime.datetime.now()
     nxt = datetime.datetime(now.year, now.month, now.day,
                              tm.hour, tm.minute, tm.second, 0)
@@ -23,6 +18,12 @@ def createTimer(func, tm, repeat=False):
     t = threading.Timer(seconds, lambda: timerCaller(func, tm))
     timers[t] = (func, tm)
     t.start()
+    
+def timerExists(func, tm):
+    for _, val in timers.items():
+        if (func, tm) == val:
+            return True
+    return False
 
 def timerCaller(func, tm):
     # calls the func and create new timer at same time
@@ -42,4 +43,4 @@ def createTimerCaller():
     '''
     this method is called only once, when starting the application
     '''
-    print ('create timer caller')
+    pass

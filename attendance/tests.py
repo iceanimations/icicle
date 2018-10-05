@@ -2,9 +2,8 @@ from django.test import TestCase
 from . import models
 from home import models as home_models
 from datetime import datetime, date, timedelta, time as dTime
-import time
-import pytz
 from icicle import settings, utilities
+
 
 # Create your tests here.
 
@@ -38,7 +37,8 @@ class AttendanceTestCase(TestCase):
     def create_out(self, **kwargs):
         dt = datetime(2018, 9, 26, 9) + timedelta(**kwargs)
         models.Entry(uid=9600242, tid=2, date=dt.date(), time=dt.time()).save()
-
+    
+    # tests for Entry and Session
     def test_out_is_null(self):
         self.create_in()
         s = models.Session.objects.filter(employee__employeeperiod__code=9600242).order_by('inTime').last()
@@ -47,7 +47,7 @@ class AttendanceTestCase(TestCase):
         # test for session in out types
         self.assertTrue(s.inType == models.Session.BIOMETRIC)
         self.assertTrue(s.outType == '')
-        
+
     def test_in_out_duration(self):
         duration = 2
         self.create_in()
@@ -62,8 +62,7 @@ class AttendanceTestCase(TestCase):
         # test for session in out types
         self.assertTrue(s[0].inType == models.Session.BIOMETRIC)
         self.assertTrue(s[0].outType == models.Session.COMPUTED)
-        
-        
+
     def test_consecutive_ins(self):
         self.create_in()
         self.create_in(minutes=10)
@@ -135,17 +134,15 @@ class AttendanceTestCase(TestCase):
         s = models.Session.objects.all().order_by('inTime')
         self.assertEqual(len(e), 2)
         self.assertEqual(len(s), 3)
-        tz = pytz.timezone(settings.TIME_ZONE)
-        self.assertEqual(s.first().outTime, tz.localize(datetime(2018, 9, 26,
+        self.assertEqual(s.first().outTime, settings.localize(datetime(2018, 9, 26,
                                                                  9, 59, 59)))
-        self.assertEqual(s.last().inTime, tz.localize(datetime(2018, 10, 5,
+        self.assertEqual(s.last().inTime, settings.localize(datetime(2018, 10, 5,
                                                                10)))
-    
+    # tests for Attendance
     def test_single_attendance(self):
         self.create_in()
         self.create_out(hours=2)
         a = models.Attendance.objects.all()
-        #print (models.Sessio)
         self.assertEqual(len(a), 1)
     
     def test_in_after_endtime(self):
@@ -176,3 +173,23 @@ class AttendanceTestCase(TestCase):
         self.create_out(days=10)
         a = models.Attendance.objects.all()
         self.assertEqual(len(a), 4)
+
+    def test_missing_attendances(self):
+        for day in range(5):
+            self.create_in(days=day, hours=2)
+            self.create_out(days=day, hours=11)
+        last = models.Attendance.objects.all().order_by('date').last()
+        self.assertEqual(last.date, date(2018, 9, 30))
+        self.assertEqual(len(models.Attendance.objects.all()), 5)
+        self.create_in(days=8, hours=2)
+        self.create_out(days=8, hours=2)
+        self.assertEqual(len(models.Attendance.objects.all()), 6)
+        e = home_models.Employee.objects.get(username='qurban.ali')
+        print(models.Attendance.missingAttendances(e))
+        self.assertEqual(len(models.Attendance.missingAttendances(e)), 6)
+    
+    # tests for Shift
+    #TODO: create a test for crossing date, test range for crossed date 
+    def test_shift_time_range(self):
+        e = home_models.Employee.objects.get(username='qurban.ali')
+        print(e.currentShift().timeRange(settings.localize(datetime.now())))
