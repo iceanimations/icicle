@@ -2,6 +2,7 @@ from django.db import models
 from datetime import date, timedelta
 from django.apps import apps
 
+
 class EmployeeType(models.Model):
     type = models.CharField(max_length=20, verbose_name='Employee Type',
                             unique=True)
@@ -56,17 +57,30 @@ class Employee(models.Model):
         shift = self.currentShift()
         if shift:
             return shift.weekend(optional)
+    
+    def getShift(self, dt):
+        es = self.employeeshift_set.filter(models.Q(dateFrom__lte=dt),
+                                           models.Q(dateTo__gte=dt) | 
+                                           models.Q(dateTo__isnull=True) )
+        if not es:
+            ed = self.employeedepartment_set.filter(models.Q(dateFrom__lte=dt),
+                                           models.Q(dateTo__gte=dt) | 
+                                           models.Q(dateTo__isnull=True) )
+            if ed:
+                d = ed.department
+                ds = d.departmentshift_set.filter(models.Q(dateFrom__lte=dt),
+                                           models.Q(dateTo__gte=dt) | 
+                                           models.Q(dateTo__isnull=True) )
+                if ds: return ds[0].shift
+        else: return es[0].shift
+    
+    def isWeekend(self, dt, optional=False):
+        s = self.getShift(dt)
+        if s:
+            return s.isWeekend(dt, optional)
 
     def currentShift(self):
-        empShift = apps.get_model('attendance', 'EmployeeShift').lastShift(self)
-        if empShift:
-            shift = empShift.shift
-        else:
-            dept = self.currentDept()
-            if dept:
-                shift = dept.shift
-            else: return
-        return shift
+        return self.getShift(date.today())
         
     def currentDesignation(self):
         empDesignation = EmployeeDesignation.lastDesignation(self)
@@ -120,7 +134,6 @@ class Employee(models.Model):
         lastPeriod = self.lastPeriod()
         if lastPeriod:
             return lastPeriod.code
-        
 
 class EmployeePeriod(models.Model):
     employee = models.ForeignKey(Employee, null=True, blank=True,

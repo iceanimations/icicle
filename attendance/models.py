@@ -64,16 +64,32 @@ class Attendance(models.Model):
     def __str__(self):
         return str(self.date) + ' - ' + self.employee.name
     
+    # use this manager only for reading
     objects = AttManager()
-    # use the following manager to prevent recursion in markMissingAttendances
+    
+    # use this manager for writing and modifying
+    # prevents recursion in markMissingAttendances
     objects2 = models.Manager()
     
     @classmethod
-    def markMissingAttendances(self):
-        today = date.today()
+    def markMissingAttendances(cls):
         for emp in apps.get_model('home', 'Employee').objects.all():
             if emp.isActive():
-                dates = Attendance.missingAttendances(emp)
+                attendances = Attendance.missingAttendances(emp)
+                if attendances:
+                    for dt in attendances:
+                        status = cls.ABSENT
+                        if emp.isWeekend(dt, optional=True):
+                            status = cls.WEEKEND
+                        elif Holiday.isHoliday(dt):
+                            status = cls.HOLIDAY
+                        else:
+                            lv = LeaveRequest.objects.filter(employee=emp,
+                                                date=dt,
+                                                status=LeaveRequest.APPROVED)
+                            if lv:
+                                status = cls.LEAVE
+                        cls.markAttendance(emp, status, dt)
                 
     @classmethod
     def missingAttendances(cls, emp):
@@ -81,38 +97,44 @@ class Attendance(models.Model):
                                         ).filter(employee=emp
                                         ).order_by('date')
         if attendances:
-            # check if shift is ongoing
-            shift = emp.crrentShift()
-            if shift:
-                tr = shift.timeRange(settings.localize(datetime.now()))
-                if tr: includeToday = 0
-                else: includeToday = 1
-                dates = { attendances[0] + timedelta(day)
-                         for day in range((date.today() - attendances[0]
-                                           ).days + includeToday)}
-                #TODO: start here
-    
+            dates = { attendances[0] + timedelta(day)
+                     for day in range((date.today() - attendances[0]).days) }
+            return list(dates.difference(set(attendances)))
+
     @classmethod
     def markAttendance(cls, employee, status, dt):
-        a = Attendance.objects.get_or_create(employee=employee,
+        a = Attendance.objects2.get_or_create(employee=employee,
                                              date=dt)[0]
         a.status = status
         a.save()
 
 class LeaveRequest(models.Model):
-    attendance = models.ForeignKey(Attendance, null=True, blank=True,
-                                   on_delete=models.SET_NULL)
+    APPROVED = 'approved'
+    REJECTED = 'rejected'
+    DELETED = 'deleted'
+    PENDING = 'pending'
+
+    employee = models.ForeignKey('home.Employee',
+                                 on_delete=models.CASCADE,
+                                 related_name='employee',
+                                 null=True)
+    date = models.DateField(null=True)
     leaveType = models.ForeignKey(LeaveType, null=True, blank=True,
-                                  on_delete=models.SET_NULL)
+                                  on_delete=models.CASCADE)
     description = models.TextField()
     datetime = models.DateTimeField(auto_now_add=True)
     approvalDate = models.DateTimeField()
     approvedBy = models.ForeignKey('home.Employee', null=True, blank=True,
-                                   on_delete=models.SET_NULL)
+                                   on_delete=models.SET_NULL,
+                                   related_name='approvedBy')
+    status = models.CharField(max_length=20, default=PENDING)
     remarks = models.TextField(blank=True)
+
+    class Meta:
+        unique_together = ('employee', 'date',)
     
     def __str__(self):
-        return self.attendance.employee.name +' - '+ str(self.attendance.date)
+        return self.employee.name +' - '+ str(self.date)
 
 class Day(models.Model):
     use_for_related_fields = True
@@ -162,6 +184,14 @@ class Shift(models.Model):
         if optional and opt:
             for op in opt: we.append(op)
         return we
+
+    def isWeekend(self, dt, optional=False):
+        day = dt.strftime('%A')
+        statuses = [DayOfShift.OFF]
+        if optional:
+            statuses.append(DayOfShift.OPT) 
+        return bool(self.dayofshift_set.filter(day__name=day,
+                                               status__in=statuses))
 
     def timeRange(self, dt):
         if not isinstance(dt, datetime):
@@ -240,10 +270,15 @@ class DayOfShift(models.Model):
 
 class Holiday(models.Model):
     name = models.CharField(max_length=30)
-    date = models.DateField()
+    date = models.DateField(unique=True)
     
     def __str__(self):
         return self.name +' - '+ str(self.date)
+    
+    @classmethod
+    def isHoliday(cls, dt=None):
+        if not dt: dt = date.today()
+        return dt in cls.objects.values_list('date', flat=True)
 
 class Session(models.Model):
     BIOMETRIC = 'biometric'
