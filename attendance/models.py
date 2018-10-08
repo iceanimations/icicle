@@ -31,14 +31,13 @@ class LeaveType(models.Model):
                           (EMERGENCY_LEAVE, 'Emergency Leave'),
                           (UNPAID_LEAVE, 'Unpaid Leave'))
 
-    name = models.CharField(max_length=20, choices=LEAVE_NAME_CHOICES)
-    quotaMax = models.IntegerField(verbose_name='Quota (Max per Year)')
-    consecutiveMax = models.IntegerField(verbose_name='Consecutive (Max)')
-    consecutiveMin = models.IntegerField(verbose_name='Consecutive (Min)')
-    caryForwardable = models.BooleanField(verbose_name='Carry Forwardable')
-    onceOnly = models.BooleanField(verbose_name='Once per Employee')
-    periodForAdvance = models.IntegerField(
-                            verbose_name='Advance Application Period (Days)')
+    name = models.CharField(max_length=20, choices=LEAVE_NAME_CHOICES,
+                            unique=True)
+    quota = models.IntegerField(verbose_name='Quota (Max per Year)')
+    caryForwardable = models.BooleanField(verbose_name='Carry Forwardable',
+                                          default=False)
+    onceOnly = models.BooleanField(verbose_name='Once per Employee',
+                                   default=False)
     availability = models.ManyToManyField('home.EmployeeType')
     
     def __str__(self):
@@ -61,6 +60,10 @@ class Attendance(models.Model):
     employee = models.ForeignKey('home.Employee', null=True, blank=True,
                                  on_delete=models.SET_NULL)
     status = models.CharField(max_length=20, blank=True)
+    
+    class Meta:
+        unique_together = ('employee', 'date',)
+    
     def __str__(self):
         return str(self.date) + ' - ' + self.employee.name
     
@@ -108,10 +111,10 @@ class Attendance(models.Model):
         a.status = status
         a.save()
 
+#TODO: delete the leave request object if emp marks present on a leave in attendance
 class LeaveRequest(models.Model):
     APPROVED = 'approved'
     REJECTED = 'rejected'
-    DELETED = 'deleted'
     PENDING = 'pending'
 
     employee = models.ForeignKey('home.Employee',
@@ -123,7 +126,8 @@ class LeaveRequest(models.Model):
                                   on_delete=models.CASCADE)
     description = models.TextField()
     datetime = models.DateTimeField(auto_now_add=True)
-    approvalDate = models.DateTimeField()
+    
+    approvalDate = models.DateTimeField(null=True)
     approvedBy = models.ForeignKey('home.Employee', null=True, blank=True,
                                    on_delete=models.SET_NULL,
                                    related_name='approvedBy')
@@ -135,6 +139,29 @@ class LeaveRequest(models.Model):
     
     def __str__(self):
         return self.employee.name +' - '+ str(self.date)
+    
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        att = Attendance.objects.filter(employee=self.employee,
+                                        date=self.date)
+        if att:
+            att = att[0]
+        if self.status == LeaveRequest.APPROVED:
+            if att:
+                if att.status == Attendance.ABSENT:                
+                    att.status = Attendance.LEAVE
+                    att.save()
+            else:
+                Attendance.markAttendance(self.employee,
+                                          Attendance.LEAVE,
+                                          self.date)
+        # when rejecting approved leave request
+        elif self.status == LeaveRequest.REJECTED:
+            if att and att.status == Attendance.LEAVE:
+                att.status = Attendance.ABSENT
+                att.save()
+        else: # when self.status pending
+            pass
 
 class Day(models.Model):
     use_for_related_fields = True
@@ -215,7 +242,8 @@ class Shift(models.Model):
             if dt >= start_time and dt < end_time:
                 return (start_time, end_time)
         
-        yesterday = (dt - timedelta(days=1)).strftime('%A')
+        # get the previous day if inTime has crossed the date
+        yesterday = dt.strftime('%A')
         tr = self.dayofshift_set.filter(day__name=yesterday).values_list(
                                     'timeFrom', 'timeTo', 'isTimeToNextDay')
         if tr:
@@ -227,8 +255,7 @@ class Shift(models.Model):
                                 dt.year, dt.month, dt.day,
                                 tr[1].hour, tr[1].minute, tr[1].second))
             if tr[2]:
-                end_time += timedelta(days=1)
-            
+                start_time -= timedelta(days=1)
             if dt >= start_time and dt < end_time:
                 return (start_time, end_time)
     

@@ -5,10 +5,54 @@ from datetime import datetime, date, timedelta, time as dTime
 from icicle import settings, utilities
 
 
-# Create your tests here.
+class AttendanceCrossingDateTestCase(TestCase):
+    # a test case for crossing date
+    @classmethod
+    def setUpTestData(cls):
+        e = home_models.Employee.objects.create(username='qurban.ali',
+                                                name='Qurban Ali')
+        e.activate(date(2018, 9, 26), 9600242)
+        s = models.Shift(name='Normal')
+        s.save()
+        for day in ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']:
+            d = models.Day(name=day)
+            d.save()
+            status = models.DayOfShift.ON
+            if day == 'Saturday': status = models.DayOfShift.OPT
+            if day == 'Sunday': status = models.DayOfShift.OFF
+            dos = models.DayOfShift(shift=s, day=d, timeFrom=dTime(22, 0),
+                                    timeTo=dTime(6, 0), status=status,
+                                    isTimeToNextDay=True)
+            dos.save()
+        es = models.EmployeeShift.objects.create(employee=e, shift=s)
+        es.dateFrom = date(2018, 9, 26)
+        es.save()
+    
+    def create_in(self, **kwargs):
+        dt = datetime(2018, 9, 26, 21) + timedelta(**kwargs)
+        models.Entry(uid=9600242, tid=1, date=dt.date(), time=dt.time()).save()
+
+    def create_out(self, **kwargs):
+        dt = datetime(2018, 9, 26, 21) + timedelta(**kwargs)
+        models.Entry(uid=9600242, tid=2, date=dt.date(), time=dt.time()).save()
+    
+    def test_shift_time_range(self):
+        self.create_in(hours=2)
+        self.create_out(hours=8)
+        self.assertEqual(len(models.Session.objects.all()), 1)
+        s = models.Shift.objects.get(name='Normal')
+        # test when inTime has crossed date
+        self.assertEqual(s.timeRange(settings.localize(datetime(2018, 9, 26, 1, 0))),
+                         (settings.localize(datetime(2018, 9, 25, 22, 0)),
+                          settings.localize(datetime(2018, 9, 26, 6, 0))))
+        # test when inTime has not crossed date
+        self.assertEqual(s.timeRange(settings.localize(datetime(2018, 9, 26, 23, 0))),
+                         (settings.localize(datetime(2018, 9, 26, 22, 0)),
+                          settings.localize(datetime(2018, 9, 27, 6, 0))))
+        
 
 class AttendanceTestCase(TestCase):
-
+    # a test case for single date
     @classmethod
     def setUpTestData(cls):
         e = home_models.Employee.objects.create(username='qurban.ali',
@@ -29,10 +73,20 @@ class AttendanceTestCase(TestCase):
         es = models.EmployeeShift.objects.create(employee=e, shift=s)
         es.dateFrom = date(2018, 9, 26)
         es.save()
-        models.Holiday.objects.create(name='Test', date=date(2018, 10, 1))
-            
         
-    
+        models.Holiday.objects.create(name='Test', date=date(2018, 10, 1))
+        empType = home_models.EmployeeType(type='Permanent')
+        empType.save()
+        etm = home_models.EmployeeTypeMapping.objects.create(employee=e,
+                                                             type=empType)
+        etm.dateFrom = date(2018, 9, 26)
+        etm.save()
+        lt = models.LeaveType.objects.create(name=models.LeaveType.CASUAL_LEAVE,
+                                             quota=10)
+        lt.availability.set([empType])
+        lt.save()
+
+
     def create_in(self, **kwargs):
         dt = datetime(2018, 9, 26, 9) + timedelta(**kwargs)
         models.Entry(uid=9600242, tid=1, date=dt.date(), time=dt.time()).save()
@@ -176,8 +230,8 @@ class AttendanceTestCase(TestCase):
         self.create_out(days=10)
         a = models.Attendance.objects2.all()
         self.assertEqual(len(a), 4)
-
-    def test_missing_attendances(self):
+        
+    def markAttendances(self):
         for day in range(5):
             self.create_in(days=day, hours=2)
             self.create_out(days=day, hours=11)
@@ -186,20 +240,16 @@ class AttendanceTestCase(TestCase):
         self.assertEqual(len(models.Attendance.objects2.all()), 5)
         self.create_in(days=8, hours=2) # 2018/10/4
         self.create_out(days=8, hours=2)
+
+    def test_missing_attendances(self):
+        self.markAttendances()
         self.assertEqual(len(models.Attendance.objects2.all()), 6)
         e = home_models.Employee.objects.get(username='qurban.ali')
         missingDays = (date.today() - date(2018, 9, 26)).days - 6
         self.assertEqual(len(models.Attendance.missingAttendances(e)), missingDays)
     
     def test_markMissingAttendances(self):
-        for day in range(5):
-            self.create_in(days=day, hours=2)
-            self.create_out(days=day, hours=11)
-        last = models.Attendance.objects2.all().order_by('date').last()
-        self.assertEqual(last.date, date(2018, 9, 30))
-        self.assertEqual(len(models.Attendance.objects2.all()), 5)
-        self.create_in(days=8, hours=2)
-        self.create_out(days=8, hours=2)
+        self.markAttendances()
         self.assertEqual(len(models.Attendance.objects2.all()), 6)
         e = home_models.Employee.objects.get(username='qurban.ali')
         days = (date.today() - date(2018, 9, 26)).days
@@ -215,7 +265,8 @@ class AttendanceTestCase(TestCase):
             self.assertEqual(att.status, models.Attendance.WEEKEND)
         for att in models.Attendance.objects.filter(date__in=[
                                                               date(2018, 10, 2),
-                                                              date(2018, 10, 3)]
+                                                              date(2018, 10, 3),
+                                                              date(2018, 10, 5)]
                                                     ):
             self.assertEqual(att.status, models.Attendance.ABSENT)
         self.assertEqual(models.Attendance.objects.get(date=date(2018, 10, 1)).status,
@@ -235,6 +286,49 @@ class AttendanceTestCase(TestCase):
         s = models.Shift.objects.get(name='Normal')
         self.assertEqual(e.currentShift(), s)
     
+    # LeaveRequest
+    def test_leaveRequest(self):
+        self.markAttendances()
+        self.assertEqual(len(models.Attendance.objects2.all()), 6)
+        e = home_models.Employee.objects.get(username='qurban.ali')
+        cl = models.LeaveType.objects.get(name=models.LeaveType.CASUAL_LEAVE)
+        lr = models.LeaveRequest.objects.create(employee=e,
+                                                date=date(2018, 10, 3),
+                                                leaveType=cl,
+                                                description='Work at home')
+        self.assertEqual(len(models.LeaveRequest.objects.all()), 1)
+        # attendance is accessed while saving leaveRequest
+        self.assertEqual(len(models.Attendance.objects2.all()),
+                         (date.today() - date(2018, 9, 26)).days)
+        lr.approvalDate = settings.localize(datetime.now())
+        lr.approvedBy = e
+        lr.status = models.LeaveRequest.APPROVED
+        lr.remarks = 'Granted'
+        lr.save()
+        self.assertEqual(len(models.Attendance.objects.all()),
+                         (date.today() - date(2018, 9, 26)).days)
+        self.assertEqual(models.Attendance.objects.filter(
+                                        date=date(2018, 10, 3),
+                                        employee=e)[0].status,
+                         models.Attendance.LEAVE)
+        for att in models.Attendance.objects.filter(date__in=[
+                                                              date(2018, 10, 2),
+                                                              date(2018, 10, 5)]
+                                                    ):
+            self.assertEqual(att.status, models.Attendance.ABSENT)
+        # reject the approved leave
+        lr.approvalDate = settings.localize(datetime.now())
+        lr.status = models.LeaveRequest.REJECTED
+        lr.remarks = 'Not Allowed'
+        lr.save()
+        self.assertEqual(len(models.Attendance.objects.all()),
+                         (date.today() - date(2018, 9, 26)).days)
+        for att in models.Attendance.objects.filter(date__in=[
+                                                              date(2018, 10, 2),
+                                                              date(2018, 10, 3),
+                                                              date(2018, 10, 5)]
+                                                    ):
+            self.assertEqual(att.status, models.Attendance.ABSENT)
 
     #TODO: create a test for crossing date, test range for crossed date 
     def _test_shift_time_range(self):
