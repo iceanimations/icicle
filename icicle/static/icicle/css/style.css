@@ -9,14 +9,23 @@ body {
 	color: red;
 }
 
+.green {
+	color: green;
+}
+
+.yellow {
+	color: yellow;
+}
+
 .title {
 	font-size: 16pt;
 }
 
 form input[type=text], form input[type=password],
-form input[type=submit], form input[type=date], form select {
+form input[type=submit], form input[type=date], form select, textarea{
 	background-color: white;
 	border: solid 1px #0070a0;
+	margin: 5px;
 }
 
 form input[type=text]:focus, form input[type=password]:focus,
@@ -48,6 +57,7 @@ img {
 	width: 100%;
 	height: auto;
 }
+
 
 .center {
 	margin: 0 auto;
@@ -90,6 +100,11 @@ img {
 	text-align: right;
 }
 
+.simple-container {
+	border: solid 1px gray;
+	margin: 10px;
+}
+
 
 .container {
 	margin: 0 auto;
@@ -112,6 +127,13 @@ img {
 	margin-top: 20px;
 	margin-bottom: 20px;
 }
+
+.row-simple {
+	width: 100%;
+	display: flex;
+	flex-wrap: nowrap;
+}
+
 .col-1 {
 	padding: 4px;
 	width: 8.33%;

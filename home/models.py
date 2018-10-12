@@ -58,7 +58,7 @@ class Employee(models.Model):
         if shift:
             return shift.weekend(optional)
     
-    def getShift(self, dt):
+    def getShift(self, dt, start=False):
         es = self.employeeshift_set.filter(models.Q(dateFrom__lte=dt),
                                            models.Q(dateTo__gte=dt) | 
                                            models.Q(dateTo__isnull=True) )
@@ -67,20 +67,20 @@ class Employee(models.Model):
                                            models.Q(dateTo__gte=dt) | 
                                            models.Q(dateTo__isnull=True) )
             if ed:
-                d = ed.department
+                d = ed[0].dept
                 ds = d.departmentshift_set.filter(models.Q(dateFrom__lte=dt),
                                            models.Q(dateTo__gte=dt) | 
                                            models.Q(dateTo__isnull=True) )
-                if ds: return ds[0].shift
-        else: return es[0].shift
+                if ds: return (ds[0].shift, ds[0].dateFrom) if start else ds[0].shift
+        else: return (es[0].shift, es[0].dateFrom) if start else es[0].shift
     
     def isWeekend(self, dt, optional=False):
         s = self.getShift(dt)
         if s:
             return s.isWeekend(dt, optional)
 
-    def currentShift(self):
-        return self.getShift(date.today())
+    def currentShift(self, start=False):
+        return self.getShift(date.today(), start=start)
         
     def currentDesignation(self):
         empDesignation = EmployeeDesignation.lastDesignation(self)
@@ -134,6 +134,38 @@ class Employee(models.Model):
         lastPeriod = self.lastPeriod()
         if lastPeriod:
             return lastPeriod.code
+    
+    def absents(self, exclude_pending_leaves=False):
+        att = self.attendances(apps.get_model('attendance',
+                                               'Attendance').ABSENT)
+        if exclude_pending_leaves:
+            att = att.exclude(date__in=apps.get_model('attendance',
+                              'LeaveRequest').objects.filter(
+                              status=apps.get_model('attendance',
+                              'LeaveRequest').PENDING).values_list('date',
+                                                                   flat=True))
+        return att
+    
+    def allLeaves(self):
+        return apps.get_model('attendance', 'LeaveRequest'
+                              ).objects.filter(employee=self
+                              ).order_by('leaveType')
+    
+    def leaves(self, tp):
+        tp = apps.get_model('attendance', 'LeaveType').objects.get(name=tp)
+        lvs = self.attendances(apps.get_model('attendance',
+                                              'Attendance').LEAVE).values_list(
+                                                'date', flat=True)
+        return apps.get_model('attendance', 'LeaveRequest'
+                              ).objects.filter(employee=self,
+                                        date__in=lvs,
+                                        leaveType=tp,
+                                        status=apps.get_model('attendance',
+                                        'LeaveRequest').APPROVED)
+    
+    def attendances(self, status):
+        return apps.get_model('attendance', 'Attendance'
+                              ).objects.filter(status=status).order_by('date')
 
 class EmployeePeriod(models.Model):
     employee = models.ForeignKey(Employee, null=True, blank=True,

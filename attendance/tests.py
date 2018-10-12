@@ -52,7 +52,6 @@ class AttendanceCrossingDateTestCase(TestCase):
         
 
 class AttendanceTestCase(TestCase):
-    # a test case for single date
     @classmethod
     def setUpTestData(cls):
         e = home_models.Employee.objects.create(username='qurban.ali',
@@ -329,7 +328,3 @@ class AttendanceTestCase(TestCase):
                                                               date(2018, 10, 5)]
                                                     ):
             self.assertEqual(att.status, models.Attendance.ABSENT)
-
-    #TODO: create a test for crossing date, test range for crossed date 
-    def _test_shift_time_range(self):
-        e = home_models.Employee.objects.get(username='qurban.ali')

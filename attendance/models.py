@@ -44,6 +44,10 @@ class LeaveType(models.Model):
         for name, nicename in self.LEAVE_NAME_CHOICES:
             if name == self.name: return nicename
     
+    def nice_name(self):
+        for name, nice in LeaveType.LEAVE_NAME_CHOICES:
+            if name == self.name: return nice
+
 class AttManager(models.Manager):
     def get_queryset(self):
         Attendance.markMissingAttendances()
@@ -65,7 +69,7 @@ class Attendance(models.Model):
         unique_together = ('employee', 'date',)
     
     def __str__(self):
-        return str(self.date) + ' - ' + self.employee.name
+        return str(self.date) + ' - ' + self.employee.name +' - '+ self.status
     
     # use this manager only for reading
     objects = AttManager()
@@ -96,11 +100,16 @@ class Attendance(models.Model):
                 
     @classmethod
     def missingAttendances(cls, emp):
+        try:
+            # get the starting date of current shift
+            _, start = emp.currentShift(start=True)
+        except: return 
         attendances = Attendance.objects2.values_list('date', flat=True
                                         ).filter(employee=emp
                                         ).order_by('date')
+        
         if attendances:
-            dates = { attendances[0] + timedelta(day)
+            dates = { start + timedelta(day)
                      for day in range((date.today() - attendances[0]).days) }
             return list(dates.difference(set(attendances)))
 
@@ -116,7 +125,12 @@ class LeaveRequest(models.Model):
     APPROVED = 'approved'
     REJECTED = 'rejected'
     PENDING = 'pending'
-
+    
+    STATUSES = ((APPROVED, 'Approved'),
+                (REJECTED, 'Rejected'),
+                (PENDING, 'Pending'))
+    
+    # fields filled by applicant
     employee = models.ForeignKey('home.Employee',
                                  on_delete=models.CASCADE,
                                  related_name='employee',
@@ -127,18 +141,29 @@ class LeaveRequest(models.Model):
     description = models.TextField()
     datetime = models.DateTimeField(auto_now_add=True)
     
+    
+    # fields filled by approvee
     approvalDate = models.DateTimeField(null=True)
     approvedBy = models.ForeignKey('home.Employee', null=True, blank=True,
                                    on_delete=models.SET_NULL,
                                    related_name='approvedBy')
     status = models.CharField(max_length=20, default=PENDING)
     remarks = models.TextField(blank=True)
-
-    class Meta:
-        unique_together = ('employee', 'date',)
     
     def __str__(self):
         return self.employee.name +' - '+ str(self.date)
+    
+    def approve(self, approvedBy, remarks):
+        self.approvedBy = approvedBy
+        self.status = LeaveRequest.APPROVED
+        self.remarks = remarks
+        self.save()
+    
+    def reject(self, rejectedBy, remarks):
+        self.approvedBy = rejectedBy
+        self.status = LeaveRequest.REJECTED
+        self.remarks = remarks
+        self.save()
     
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
@@ -162,6 +187,11 @@ class LeaveRequest(models.Model):
                 att.save()
         else: # when self.status pending
             pass
+    
+    def nice_status(self):
+        for status, nice in LeaveRequest.STATUSES:
+            if self.status == status:
+                return nice
 
 class Day(models.Model):
     use_for_related_fields = True
@@ -177,7 +207,7 @@ class EmployeeShift(models.Model):
                               on_delete=models.SET_NULL)
     dateFrom = models.DateField(auto_now_add=True, null=True,
                                 verbose_name='From')
-    dateTo = models.DateField(null=True,
+    dateTo = models.DateField(blank=True, null=True,
                               verbose_name='To')
     def setLastShiftDateTo(self):
         lastShift = EmployeeShift.lastShift(self.employee)

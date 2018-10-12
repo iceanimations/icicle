@@ -7,7 +7,7 @@ from .models import *
 
 
 admin.site.register([Day, Holiday, Session, LeaveType,
-                     Attendance, LeaveRequest])
+                     Attendance, LeaveRequest, Entry, EmployeeShift])
 
 class DayOfShiftInline(admin.TabularInline):
     model = Shift.days.through

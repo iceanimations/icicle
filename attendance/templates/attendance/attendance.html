@@ -2,8 +2,69 @@
 {% block title %}| Attendance {% endblock %}
 {% block content %}
 
-<div class="row box">
-	Attendance
+<div class="row">
+	<div class="col-5 simple-container">
+		<h3 class="text-center">Absents</h3>
+		{% if user %}
+		<form method="post">
+			{% csrf_token %}
+			<div class="row box">
+				<select name="leaveType" class="col-8">
+					<option value="0">--Select--</option>
+					{% for lt in leaveTypes %}
+						<option value="{{ lt.pk }}">{{ lt.nice_name }}</option>
+					{% endfor %}
+					<input class="col-4" type="submit" name="submit" value="Apply" />
+				</select>
+			</div>
+			{% for absent in absents %}
+				<div class="row box">
+					<input type="checkbox" class="col-1" name="absents" value="{{absent.date|date:"Y-m-d"}}" />
+						<div class="col-3">{{ absent.date|date:"Y-m-d" }}</div>
+					<input type="text" placeholder="Description" class="col-8" name="{{ absent.date|date:"Y-m-d" }}" />
+				</div>
+			{% endfor %}
+		</form>
+		{%endif%}
+	</div>
+	<div class="col-4 simple-container">
+		<h3 class="text-center">Leaves</h3>
+		{% for lv in leaves %}
+			<div class="row box">
+					<div class="col-6 text-center">
+						<div class="row-simple">
+						{{ lv.date|date:"Y-m-d" }}
+						</div>
+						<div class="row-simple">
+						({{ lv.leaveType.nice_name }})
+						</div>
+					</div>
+					<div class="col-6 text-center">Status:
+						{% if lv.status == "approved" %}
+							<span class="green">{{ lv.nice_status }}</span>
+						{% else %}
+							<span class="red">{{ lv.nice_status }}</span>
+						{%endif%}
+					</div>
+					
+			</div>
+		{% endfor %}
+	</div>
+	<div class="col-3 simple-container">
+		<h3 class="text-center">Availed Leaves</h3>
+		{% for lt in leaveTypes %}
+		<div class="row box">
+			<div class="col-12">
+				<div class="row-simple">
+					<div class="col-12">{{ lt.nice_name }}</div>
+				</div>
+				<div class="row-simple">
+					<div class="col-12 text-center">1 of 10</div>
+				</div>
+			</div>
+		</div>
+		{% endfor %}
+	</div>
 </div>
 
 {% endblock %}
