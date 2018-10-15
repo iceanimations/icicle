@@ -5,6 +5,7 @@ from . import models
 from attendance.models import Shift, EmployeeShift
 from icicle import auth, utilities as util
 import json
+import os
 
 
 def home(request):
@@ -22,8 +23,10 @@ def home(request):
         response = redirect('/login')
         response.delete_cookie('user')
         return response
-            
+#TODO: remove temp 123 user
 def loggedInUser(request):
+    if os.environ['USERNAME'] == '123':
+        return models.Employee.objects.get(username='qurban.ali')
     cookie = request.COOKIES.get('user')
     if cookie:
         username = cookie.split('|')[0]

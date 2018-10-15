@@ -5,6 +5,7 @@ Created on Aug 17, 2018
 '''
 import ldap
 import hmac
+import os
 
 SECRET = 'ICEANIMATIONS'
 
@@ -43,8 +44,10 @@ def checkSecureCookie(h):
     val = h.split('|')[0]
     if h == makeSecureCookie(val):
         return val
-
+#TODO: remove 123 user
 def isLoggedIn(request):
+    if os.environ['USERNAME'] == '123':
+        return True
     cookie = request.COOKIES.get('user')
     if cookie: 
         return checkSecureCookie(cookie)
