@@ -3,6 +3,27 @@
 {% block content %}
 
 <div class="row">
+	<div class="col-4"></div>
+	<form class="col-4 box">
+		<div class="row-simple">
+			<label class="col-4">Year</label>
+			<select class="col-4" name="year" onchange="this.form.submit()">
+				{% for yr in years %}
+					{% if year == yr %}
+						<option selected="selected" value="{{ yr }}">{{ yr }}</option>
+					{% else %}
+						<option value="{{ yr }}">{{ yr }}</option>
+					{% endif %}
+				{% endfor %}
+			</select>
+			<div class="col-4"></div>
+		</div>
+	</form>
+	<div class="col-2"></div>
+	<div class="col-2"><a href="advance/">Apply for advance leaves</a></div>
+</div>
+
+<div class="row">
 	<div class="col-5 simple-container">
 		<h3 class="text-center">Absents</h3>
 		{% if user %}
@@ -10,7 +31,7 @@
 			{% csrf_token %}
 			<div class="row box">
 				<select name="leaveType" class="col-8">
-					<option value="0">--Select--</option>
+					<option value="0">--Select Type--</option>
 					{% for lt in leaveTypes %}
 						<option value="{{ lt.pk }}">{{ lt.nice_name }}</option>
 					{% endfor %}
@@ -18,11 +39,17 @@
 				</select>
 			</div>
 			{% for absent in absents %}
-				<div class="row box">
-					<input type="checkbox" class="col-1" name="absents" value="{{absent.date|date:"Y-m-d"}}" />
-						<div class="col-3">{{ absent.date|date:"Y-m-d" }}</div>
-					<input type="text" placeholder="Description" class="col-8" name="{{ absent.date|date:"Y-m-d" }}" />
+			<div class="row-simple box">
+				<div class="col-12">
+					<div class="row-simple">
+						<input type="checkbox" name="absents" value="{{absent.date|date:"Y-m-d"}}" />
+						<div class="col-3"><b>{{ absent.date|date:"Y-m-d" }}</b></div>
+					</div>
+					<div class="row-simple">
+						<textarea rows="2" style="resize: none;" placeholder="Description" class="col-12" name="{{ absent.date|date:"Y-m-d" }}"></textarea>
+					</div>
 				</div>
+			</div>
 			{% endfor %}
 		</form>
 		{%endif%}
@@ -30,23 +57,26 @@
 	<div class="col-4 simple-container">
 		<h3 class="text-center">Leaves</h3>
 		{% for lv in leaves %}
-			<div class="row box">
-					<div class="col-6 text-center">
-						<div class="row-simple">
-						{{ lv.date|date:"Y-m-d" }}
-						</div>
-						<div class="row-simple">
-						({{ lv.leaveType.nice_name }})
-						</div>
+			<div class="row-simple box">
+				<div class="col-6 text-center">
+					<div class="row-simple row-item">
+					<b>{{ lv.date|date:"Y-m-d" }}</b>
 					</div>
-					<div class="col-6 text-center">Status:
-						{% if lv.status == "approved" %}
-							<span class="green">{{ lv.nice_status }}</span>
-						{% else %}
-							<span class="red">{{ lv.nice_status }}</span>
-						{%endif%}
+					<div class="row-simple row-item">
+					({{ lv.leaveType.nice_name }})
 					</div>
-					
+				</div>
+				<div class="col-6 text-center">Status:
+					{% if lv.status == "approved" %}
+						<span class="green">{{ lv.nice_status }}</span>
+					{%endif%}
+					{% if lv.status == "pending" %}
+						<span class="orange">{{ lv.nice_status }}</span>
+					{%endif%}
+					{% if lv.status == "rejected" %}
+						<span class="red">{{ lv.nice_status }}</span>
+					{%endif%}
+				</div>
 			</div>
 		{% endfor %}
 	</div>

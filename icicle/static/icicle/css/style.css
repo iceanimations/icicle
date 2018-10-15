@@ -13,8 +13,8 @@ body {
 	color: green;
 }
 
-.yellow {
-	color: yellow;
+.orange {
+	color: orange;
 }
 
 .title {
@@ -50,7 +50,9 @@ button::-moz-focus-inner {
 }
 
 label {
-	text-align:right;
+	text-align: right;
+	display: inline-block;
+	vertical-align: middle;
 }
 
 img {
@@ -132,6 +134,13 @@ img {
 	width: 100%;
 	display: flex;
 	flex-wrap: nowrap;
+	margin-top: 10px;
+	margin-bottom: 10px;
+}
+
+.row-item {
+	margin-left: 5px;
+	margin-bottom: 10px;
 }
 
 .col-1 {

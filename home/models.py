@@ -144,12 +144,12 @@ class Employee(models.Model):
                               status=apps.get_model('attendance',
                               'LeaveRequest').PENDING).values_list('date',
                                                                    flat=True))
-        return att
+        return att.order_by('-date')
     
     def allLeaves(self):
         return apps.get_model('attendance', 'LeaveRequest'
                               ).objects.filter(employee=self
-                              ).order_by('leaveType')
+                              ).order_by('-date')
     
     def leaves(self, tp):
         tp = apps.get_model('attendance', 'LeaveType').objects.get(name=tp)

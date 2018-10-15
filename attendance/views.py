@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from home.views import loggedInUser
 from home.models import Employee
-from attendance.models import LeaveType, LeaveRequest
+from attendance.models import LeaveType, LeaveRequest, Attendance
 from datetime import date
 
 from home import tests
@@ -27,11 +27,23 @@ def generate_test_data(e):
 def listAttendance(request):
     user = loggedInUser(request)
     if user:
+        year = request.GET.get('year', None)
+        if year:
+            year = int(year)
+        else: year = date.today().year
         #generate_test_data(user)
         context = {'user': user}
-        context['absents'] = user.absents(exclude_pending_leaves=True)
+        context['year'] = year
+        # filter results for specified year
+        context['absents'] = user.absents(exclude_pending_leaves=True
+                                          ).filter(date__year=year)
+        context['leaves'] = user.allLeaves().filter(date__year=year)
+        
         context['leaveTypes'] = LeaveType.objects.all()
-        context['leaves'] = user.allLeaves()
+        # list of years from first attendance's year to current year
+        context['years'] = list(reversed([year for year in range(Attendance.objects.all(
+                            ).values_list('date', flat=True).order_by('date'
+                            ).first().year, date.today().year + 1)]))
         for lt in LeaveType.objects.all():
             context[lt.name] = user.leaves(lt.name)
         return render(request, 'attendance/attendance.html', context=context)
@@ -57,3 +69,12 @@ def attendance(request):
             return listAttendance(request)
         else:
             return redirect('/login')
+        
+def advance_leave(request):
+    user = loggedInUser(request)
+    if user:
+        context = {'user': user}
+        if request.method == 'GET':
+            return render(request, 'attendance/advance_leave.html', context=context)
+        else:
+            pass

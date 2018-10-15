@@ -8,5 +8,6 @@ from . import views
 
 
 urlpatterns = [
-               path('', views.attendance)
+               path('', views.attendance),
+               path('advance/', views.advance_leave)
 ]
