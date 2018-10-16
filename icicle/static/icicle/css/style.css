@@ -17,8 +17,26 @@ body {
 	color: orange;
 }
 
-.title {
+.gray {
+	color: gray;
+}
+
+.font-x-large {
 	font-size: 16pt;
+}
+
+.font-large {
+	font-size: 14pt;
+}
+
+/* default font size is 12 - Normal or medium */
+
+.font-small {
+	font-size: 10pt;
+}
+
+.font-x-small {
+	font-size: 8pt;
 }
 
 form input[type=text], form input[type=password],
@@ -60,6 +78,9 @@ img {
 	height: auto;
 }
 
+textarea {
+	resize: none;
+}
 
 .center {
 	margin: 0 auto;
@@ -103,6 +124,7 @@ img {
 }
 
 .simple-container {
+	background-color: #cccccc;
 	border: solid 1px gray;
 	margin: 10px;
 }
@@ -117,7 +139,7 @@ img {
 
 .box {
 	background-color: white;
-	box-shadow: 0 0 10px #909090;
+	box-shadow: 0 0 10px #808080;
 	color: #0070a0;
 }
 
@@ -139,8 +161,7 @@ img {
 }
 
 .row-item {
-	margin-left: 5px;
-	margin-bottom: 10px;
+	margin: 10px;
 }
 
 .col-1 {

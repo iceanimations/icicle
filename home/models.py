@@ -166,6 +166,21 @@ class Employee(models.Model):
     def attendances(self, status):
         return apps.get_model('attendance', 'Attendance'
                               ).objects.filter(status=status).order_by('date')
+    
+    def availedLeaves(self, typ, year, cnt=True):
+        typ = apps.get_model('attendance',
+                             'LeaveType').objects.get(name=typ)
+        als =  apps.get_model('attendance',
+                              'LeaveRequest'
+                              ).objects.filter(
+                              employee=self,
+                              status=apps.get_model('attendance',
+                              'LeaveRequest'
+                              ).APPROVED,
+                              leaveType=typ)
+        if not typ.onceOnly: als = als.filter(date__year=year)
+        if cnt: als = len(als)
+        return als
 
 class EmployeePeriod(models.Model):
     employee = models.ForeignKey(Employee, null=True, blank=True,

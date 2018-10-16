@@ -20,19 +20,8 @@ class LeaveType(models.Model):
     MARRIAGE_LEAVE = 'marriageLeave'
     EMERGENCY_LEAVE = 'emergencyLeave'
     UNPAID_LEAVE = 'unpaidLeave'
-    
-    LEAVE_NAME_CHOICES = ((SICK_LEAVE, 'Sick Leave'),
-                          (CASUAL_LEAVE, 'Casual Leave'),
-                          (ANUAL_LEAVE, 'Anual Leave'),
-                          (OFFICIAL_LEAVE, 'Official Leave'),
-                          (SPECIAL_LEAVE, 'Special Leave'),
-                          (HAJJ_LEAVE, 'Hajj Leave'),
-                          (MARRIAGE_LEAVE, 'Marriage Leave'),
-                          (EMERGENCY_LEAVE, 'Emergency Leave'),
-                          (UNPAID_LEAVE, 'Unpaid Leave'))
 
-    name = models.CharField(max_length=20, choices=LEAVE_NAME_CHOICES,
-                            unique=True)
+    name = models.CharField(max_length=20, unique=True)
     quota = models.IntegerField(verbose_name='Quota (Max per Year)')
     caryForwardable = models.BooleanField(verbose_name='Carry Forwardable',
                                           default=False)
@@ -41,16 +30,12 @@ class LeaveType(models.Model):
     availability = models.ManyToManyField('home.EmployeeType')
     
     def __str__(self):
-        for name, nicename in self.LEAVE_NAME_CHOICES:
-            if name == self.name: return nicename
-    
-    def nice_name(self):
-        for name, nice in LeaveType.LEAVE_NAME_CHOICES:
-            if name == self.name: return nice
+        return self.name
 
 class AttManager(models.Manager):
     def get_queryset(self):
         Attendance.markMissingAttendances()
+        Session.splitBeforeShiftEntry()
         return super().get_queryset()
 
 class Attendance(models.Model):
@@ -314,6 +299,7 @@ class DayOfShift(models.Model):
     
     @classmethod
     def ongoingEmployees(cls):
+        #TODO: faulty function, check for time comparison
         now = datetime.now().time()
         ongoingDayOfShift = DayOfShift.objects.filter(
                                     timeFrom__lte=now,
@@ -375,6 +361,17 @@ class Session(models.Model):
     def nextSession(cls, employee, dt):
         return cls.objects.filter(employee=employee, inTime__gte=dt
                                   ).order_by('inTime').first()
+    
+    @classmethod
+    def splitBeforeShiftEntry(cls):
+        #TODO: implement this
+        '''splits the session if inTime is less than shift start time
+        and outTime is None'''
+        
+        for session in Session.objects.filter(outTime__isnull=True):
+            if session.localInTime().time() < session.employee.shiftStartingTime():
+                pass
+            
                                   
     def splitable_save(self):
         # split the session at shift start time
@@ -468,6 +465,10 @@ class Entry(models.Model):
                         self.time.second)
         tz = pytz.timezone(settings.TIME_ZONE)
         return tz.localize(dt)
+    
+    @property
+    def entryType(self):
+        return Entry.TID_TO_INOUT[self.tid]
     
     @property
     def status(self):

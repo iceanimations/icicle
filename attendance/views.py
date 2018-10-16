@@ -24,7 +24,7 @@ def generate_test_data(e):
     lv.approve(e, 'granted')
 
 # Create your views here.
-def listAttendance(request):
+def listAttendance(request, errors=None):
     user = loggedInUser(request)
     if user:
         year = request.GET.get('year', None)
@@ -33,15 +33,18 @@ def listAttendance(request):
         else: year = date.today().year
         #generate_test_data(user)
         context = {'user': user}
+        if errors: context['errors'] = errors
         context['year'] = year
         # filter results for specified year
         context['absents'] = user.absents(exclude_pending_leaves=True
                                           ).filter(date__year=year)
         context['leaves'] = user.allLeaves().filter(date__year=year)
         
-        context['leaveTypes'] = LeaveType.objects.all()
+        context['leaveTypes'] = LeaveType.objects.filter(availability__in=[
+                                                    user.currentType()])
         # list of years from first attendance's year to current year
-        context['years'] = list(reversed([year for year in range(Attendance.objects.all(
+        context['years'] = list(reversed([year for year in range(
+                            Attendance.objects.all(
                             ).values_list('date', flat=True).order_by('date'
                             ).first().year, date.today().year + 1)]))
         for lt in LeaveType.objects.all():
@@ -56,20 +59,28 @@ def attendance(request):
     else:
         user = loggedInUser(request)
         if user:
+            errors = []
             lt = request.POST.get('leaveType')
             dates = request.POST.getlist('absents')
             if not dates or lt == 0: return listAttendance(request)
+            lt = LeaveType.objects.get(pk=lt)
+            if len(dates) + user.availedLeaves(lt.name,
+                                    request.POST.get('year')) > lt.quota:
+                errors.append('Number of leave(s) requested exceeded the'+
+                              ' allowed quota for selected leave type')
+            if errors:
+                return listAttendance(request, errors)
             for _dt in dates:
                 dt = list(map(lambda d: int(d), _dt.split('-')))
                 pdt = date(dt[0], dt[1], dt[2])
                 LeaveRequest.objects.create(employee=user,
                                     date=pdt,
-                                    leaveType=LeaveType.objects.get(pk=lt),
+                                    leaveType=lt,
                                     description=request.POST.get(_dt))
             return listAttendance(request)
         else:
             return redirect('/login')
-        
+
 def advance_leave(request):
     user = loggedInUser(request)
     if user:

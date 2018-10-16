@@ -2,6 +2,8 @@
 {% block title %}| Attendance {% endblock %}
 {% block content %}
 
+{% if user %}
+<!-- year box -->
 <div class="row">
 	<div class="col-4"></div>
 	<form class="col-4 box">
@@ -22,31 +24,42 @@
 	
 	<div class="col-4 text-right"><a href="advance/">Apply for advance leaves</a></div>
 </div>
-
+<!-- errors -->
+{% if errors %}
+	<div class="row box">
+		<span class="row-item red">{{ errors.0 }}</span>
+	</div>
+	{% endif %}
 <div class="row">
+	<!-- absent box -->
 	<div class="col-5 simple-container">
 		<h3 class="text-center">Absents</h3>
 		{% if user %}
+		<!-- leave type selection -->
 		<form method="post">
 			{% csrf_token %}
+			<input type="hidden" name="year" value="{{ year }}" />
 			<div class="row box">
 				<select name="leaveType" class="col-8">
 					<option value="0">--Select Type--</option>
 					{% for lt in leaveTypes %}
-						<option value="{{ lt.pk }}">{{ lt.nice_name }}</option>
+						<option value="{{ lt.pk }}">{{ lt.name }}</option>
 					{% endfor %}
 					<input class="col-4" type="submit" name="submit" value="Apply" />
 				</select>
 			</div>
+			<!-- absents list -->
 			{% for absent in absents %}
 			<div class="row-simple box">
 				<div class="col-12">
 					<div class="row-simple">
 						<input type="checkbox" name="absents" value="{{absent.date|date:"Y-m-d"}}" />
 						<div class="col-3"><b>{{ absent.date|date:"Y-m-d" }}</b></div>
+						<!-- print the Day -->
+						<span class="col-8 text-right gray font-small"><i>{{ absent.date|date:"l" }}</i></span>
 					</div>
 					<div class="row-simple">
-						<textarea rows="2" style="resize: none;" placeholder="Description" class="col-12" name="{{ absent.date|date:"Y-m-d" }}"></textarea>
+						<textarea rows="2" placeholder="Description" class="col-12" name="{{ absent.date|date:"Y-m-d" }}"></textarea>
 					</div>
 				</div>
 			</div>
@@ -54,47 +67,73 @@
 		</form>
 		{%endif%}
 	</div>
+	<!-- leave box -->
 	<div class="col-4 simple-container">
 		<h3 class="text-center">Leaves</h3>
 		{% for lv in leaves %}
 			<div class="row-simple box">
-				<div class="col-6 text-center">
-					<div class="row-simple row-item">
-					<b>{{ lv.date|date:"Y-m-d" }}</b>
+				<div class="col-12">
+					<div class="row-simple">
+						<div class="col-6">
+							<b>{{ lv.date|date:"Y-m-d" }}</b>
+						</div>
+						<div class="col-6 gray font-small text-right">
+								<i>{{ lv.date|date:"l" }}</i>
+						</div>
 					</div>
-					<div class="row-simple row-item">
-					({{ lv.leaveType.nice_name }})
+					<div class="row-simple">
+						<div class="col-6 font-small">
+							{{ lv.leaveType.name }}
+						</div>
+						<div class="col-6 text-right">Status:
+							<i>
+								{% if lv.status == "approved" %}
+									<span class="col-12 green">
+										{{ lv.nice_status }}
+									</span>
+								{%endif%}
+								{% if lv.status == "pending" %}
+									<span class="col-12 orange">
+										{{ lv.nice_status }}
+									</span>
+								{%endif%}
+								{% if lv.status == "rejected" %}
+									<span class="col-12 red">
+										{{ lv.nice_status }}
+									</span>
+								{%endif%}
+							</i>
+						</div>
 					</div>
-				</div>
-				<div class="col-6 text-center">Status:
-					{% if lv.status == "approved" %}
-						<span class="green">{{ lv.nice_status }}</span>
-					{%endif%}
-					{% if lv.status == "pending" %}
-						<span class="orange">{{ lv.nice_status }}</span>
-					{%endif%}
-					{% if lv.status == "rejected" %}
-						<span class="red">{{ lv.nice_status }}</span>
-					{%endif%}
 				</div>
 			</div>
 		{% endfor %}
 	</div>
+	<!-- availabe leave box -->
 	<div class="col-3 simple-container">
 		<h3 class="text-center">Availed Leaves</h3>
 		{% for lt in leaveTypes %}
-		<div class="row box">
+		<div class="row-simple box">
 			<div class="col-12">
 				<div class="row-simple">
-					<div class="col-12">{{ lt.nice_name }}</div>
+					<div class="col-6">{{ lt.name }}</div>
+					{% if lt.onceOnly %}
+					<div class="col-6 text-right gray font-small">
+						<i>Once Only</i>
+					</div>
+					{% endif %}
 				</div>
 				<div class="row-simple">
-					<div class="col-12 text-center">1 of 10</div>
+					<div class="col-12 text-center">
+							<!-- custom tag availedLeaves -->
+							{% load tags %}
+							{% availedLeaves user lt.name year %} of {{ lt.quota }}
+					</div>
 				</div>
 			</div>
 		</div>
 		{% endfor %}
 	</div>
 </div>
-
+{% endif %}
 {% endblock %}
