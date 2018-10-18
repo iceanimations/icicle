@@ -24,16 +24,20 @@ def generate_test_data(e):
     lv.approve(e, 'granted')
 
 # Create your views here.
-def listAttendance(request, errors=None):
+def listAttendance(request, errors=None, selected_data=None):
     user = loggedInUser(request)
     if user:
         year = request.GET.get('year', None)
         if year:
             year = int(year)
-        else: year = date.today().year
+        elif selected_data and 'selected_year' in selected_data:
+            year = selected_data['selected_year']
+        else:
+            year = date.today().year
         #generate_test_data(user)
         context = {'user': user}
         if errors: context['errors'] = errors
+        if selected_data: context.update(selected_data)
         context['year'] = year
         # filter results for specified year
         context['absents'] = user.absents(exclude_pending_leaves=True
@@ -60,16 +64,31 @@ def attendance(request):
         user = loggedInUser(request)
         if user:
             errors = []
-            lt = request.POST.get('leaveType')
+            lt = int(request.POST.get('leaveType'))
             dates = request.POST.getlist('absents')
-            if not dates or lt == 0: return listAttendance(request)
-            lt = LeaveType.objects.get(pk=lt)
-            if len(dates) + user.availedLeaves(lt.name,
-                                    request.POST.get('year')) > lt.quota:
-                errors.append('Number of leave(s) requested exceeded the'+
-                              ' allowed quota for selected leave type')
+            if not dates:
+                errors.append('No absent selected')
+            if lt == 0:
+                errors.append('No leave type selected')
+            else:
+                lt = LeaveType.objects.get(pk=lt)
+            #TODO: handle quota for carryfordable leaves
+            #current quota + last year remaining quota
+            year = request.POST.get('year')
+            if dates and lt:
+                if len(dates) + user.availedLeaves(lt.name, year) > lt.quota:
+                    errors.append('Number of leave(s) requested exceeded the'+
+                                  ' allowed quota for selected leave type')
             if errors:
-                return listAttendance(request, errors)
+                data = {}
+                if lt: data['selected_lt'] = lt.pk
+                data['selected_year'] = year
+                if dates: data['selected_absents'] = dates
+                for dt in user.absents(exclude_pending_leaves=True
+                                       ).filter(date__year=year):
+                    dtf = dt.date.strftime('%Y-%m-%d')
+                    data[dtf] = request.POST.get(dtf, '')
+                return listAttendance(request, errors, data)
             for _dt in dates:
                 dt = list(map(lambda d: int(d), _dt.split('-')))
                 pdt = date(dt[0], dt[1], dt[2])

@@ -11,7 +11,7 @@
 			<label class="col-4">Year</label>
 			<select class="col-4" name="year" onchange="this.form.submit()">
 				{% for yr in years %}
-					{% if year == yr %}
+					{% if yr == year %}
 						<option selected="selected" value="{{ yr }}">{{ yr }}</option>
 					{% else %}
 						<option value="{{ yr }}">{{ yr }}</option>
@@ -43,7 +43,15 @@
 				<select name="leaveType" class="col-8">
 					<option value="0">--Select Type--</option>
 					{% for lt in leaveTypes %}
-						<option value="{{ lt.pk }}">{{ lt.name }}</option>
+						{% if selected_lt %}
+							{% if lt.pk == selected_lt %}
+								<option selected="selected" value="{{ lt.pk }}">{{ lt.name }}</option>
+							{% else %}
+								<option value="{{ lt.pk }}">{{ lt.name }}</option>
+							{% endif %}
+						{% else %}
+							<option value="{{ lt.pk }}">{{ lt.name }}</option>
+						{% endif %}
 					{% endfor %}
 					<input class="col-4" type="submit" name="submit" value="Apply" />
 				</select>
@@ -53,7 +61,15 @@
 			<div class="row-simple box">
 				<div class="col-12">
 					<div class="row-simple">
-						<input type="checkbox" name="absents" value="{{absent.date|date:"Y-m-d"}}" />
+						{% if selected_absents %}
+							{% if absent.date|date:"Y-m-d" in selected_absents %}
+								<input type="checkbox" checked="checked" name="absents" value="{{absent.date|date:"Y-m-d"}}" />
+							{% else %}
+								<input type="checkbox" name="absents" value="{{absent.date|date:"Y-m-d"}}" />
+							{% endif %}
+						{% else %}
+							<input type="checkbox" name="absents" value="{{absent.date|date:"Y-m-d"}}" />
+						{% endif %}
 						<div class="col-3"><b>{{ absent.date|date:"Y-m-d" }}</b></div>
 						<!-- print the Day -->
 						<span class="col-8 text-right gray font-small"><i>{{ absent.date|date:"l" }}</i></span>
