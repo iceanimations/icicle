@@ -57,7 +57,7 @@
 				</select>
 			</div>
 			<!-- absents list -->
-			{% for absent in absents %}
+			{% for absent, desc in absents %}
 			<div class="row-simple box">
 				<div class="col-12">
 					<div class="row-simple">
@@ -75,7 +75,7 @@
 						<span class="col-8 text-right gray font-small"><i>{{ absent.date|date:"l" }}</i></span>
 					</div>
 					<div class="row-simple">
-						<textarea rows="2" placeholder="Description" class="col-12" name="{{ absent.date|date:"Y-m-d" }}"></textarea>
+						<textarea rows="2" placeholder="Description" class="col-12" name="{{ absent.date|date:"Y-m-d" }}">{{ desc }}</textarea>
 					</div>
 				</div>
 			</div>

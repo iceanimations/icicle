@@ -2,11 +2,10 @@ from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from home.views import loggedInUser
 from home.models import Employee
-from attendance.models import LeaveType, LeaveRequest, Attendance
-from datetime import date
+from attendance.models import LeaveType, LeaveRequest, Attendance, Holiday
+from datetime import date, timedelta
 
 from home import tests
-from datetime import date
 
 def generate_test_data(e):
     tst = tests.HomeTestCase()
@@ -37,11 +36,17 @@ def listAttendance(request, errors=None, selected_data=None):
         #generate_test_data(user)
         context = {'user': user}
         if errors: context['errors'] = errors
-        if selected_data: context.update(selected_data)
+        descriptions = []
+        if selected_data:
+            context.update(selected_data)
+            descriptions[:] = context.pop('descriptions')
+        absents = user.absents(exclude_pending_leaves=True
+                                          ).filter(date__year=year)
+        if not descriptions:
+            descriptions = ['' for _ in range(len(absents))]
+        context['absents'] = zip(absents, descriptions)
         context['year'] = year
         # filter results for specified year
-        context['absents'] = user.absents(exclude_pending_leaves=True
-                                          ).filter(date__year=year)
         context['leaves'] = user.allLeaves().filter(date__year=year)
         
         context['leaveTypes'] = LeaveType.objects.filter(availability__in=[
@@ -80,14 +85,15 @@ def attendance(request):
                     errors.append('Number of leave(s) requested exceeded the'+
                                   ' allowed quota for selected leave type')
             if errors:
-                data = {}
+                data = {'descriptions': []}
                 if lt: data['selected_lt'] = lt.pk
                 data['selected_year'] = year
                 if dates: data['selected_absents'] = dates
                 for dt in user.absents(exclude_pending_leaves=True
                                        ).filter(date__year=year):
                     dtf = dt.date.strftime('%Y-%m-%d')
-                    data[dtf] = request.POST.get(dtf, '')
+                    #TODO: this is not working, fix it
+                    data['descriptions'].append(request.POST.get(dtf, ''))
                 return listAttendance(request, errors, data)
             for _dt in dates:
                 dt = list(map(lambda d: int(d), _dt.split('-')))
@@ -104,7 +110,71 @@ def advance_leave(request):
     user = loggedInUser(request)
     if user:
         context = {'user': user}
+        context['leaveTypes'] = LeaveType.objects.filter(
+                                    availability__in=[user.currentType()])
         if request.method == 'GET':
-            return render(request, 'attendance/advance_leave.html', context=context)
+            return render(request, 'attendance/advance_leave.html',
+                          context=context)
         else:
-            pass
+            errors = []
+            dateFrom = request.POST.get('dateFrom')
+            dateTo = request.POST.get('dateTo')
+            desc = request.POST.get('description')
+            leaveType = int(request.POST.get('leaveType'))
+            if dateFrom and dateTo:
+                if desc != '':
+                    if leaveType != 0:
+                        leaveType = LeaveType.objects.get(pk=leaveType)
+                        if dateFrom < dateTo:
+                            days = dateTo - dateFrom
+                            #years may be different!
+                            yearFrom = dateFrom.year
+                            yearTo = dateTo.year
+                            availedLeaves = user.availedLeaves(leaveType.name,
+                                                               yearFrom)
+                            quota = leaveType.quota
+                            if yearTo - yearFrom == 1:
+                                availedLeaves += availedLeaves(leaveType.name,
+                                                               yearTo)
+                                quota *= 2 # double the quota
+                                if days > quota - availedLeaves:
+                                    errors.append('Number of days selected'+
+                                                  ' exceeds the available'+
+                                                  ' quota')
+                                else:
+                                    for day in range(days + 1):
+                                        dt = dateFrom + timedelta(day)
+                                        if not user.isWeekend(dt,
+                                            optional=True) and \
+                                            not Holiday.isHoliday(dt) and \
+                                            not LeaveRequest.objects.filter(
+                                                    employee=user,
+                                                    date=dt, status__in=[
+                                                    LeaveRequest.APPROVED,
+                                                    LeaveRequest.PENDING]):
+                                            LeaveRequest.objects.create(
+                                                employee=user,
+                                                date=dt,
+                                                leaveType=leaveType,
+                                                description=desc)
+                                    return redirect('/attenance')
+                            else:
+                                errors.append('Too many years selected')
+                        else:
+                            errors.append('Date To can not be less than From')
+                    else:
+                        errors.append('Leave Type not selected')
+                else:
+                    errors.append('No description added')
+            else:
+                errors.append('Date not specified')
+            if errors:
+                context['dateFrom'] = dateFrom
+                context['dateTo'] = dateTo
+                context['leaveType'] = leaveType
+                context['desc'] = desc
+                context['errors'] = errors
+                return render(request, 'attendance/advance_leave.html',
+                              context=context)
+    else:
+        return redirect('/login')

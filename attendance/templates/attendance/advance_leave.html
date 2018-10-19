@@ -3,17 +3,54 @@
 {% block content %}
 
 
-<div class="row box">
-	<form class="col-12">
+<div class="row">
+	<div class="col-3"></div>
+	<form class="col-6 box" method="post">
+		{% csrf_token %}
 		<div class="row-simple">
-			<label class="col-2">Advance Leave:</label>
-			<label class="col-1">From</label>
-			<input class="col-3" type="date" />
-			<label class="col-1">To</label>
-			<input class="col-3" type="date" />
-			<input class="col-2" type="submit" value="Apply" />
+			<h3 class="col-12 text-center">Advance Leave</h3>
+		</div>
+		{% if errors %}
+			<div class="row-simple red">
+				<div class="col-12 text-center">{{ errors.0 }}</div>
+			</div>
+		{% endif %}
+		<div class="row-simple">
+			<label class="col-3">From</label>
+			<input class="col-6" type="date" name="dateFrom" />
+			<div class="col-3"></div>
+		</div>
+		<div class="row-simple">
+			<label class="col-3">To</label>
+			<input class="col-6" type="date" name="dateTo" />
+			<div class="col-3"></div>
+		</div>
+		<div class="row-simple">
+			<label class="col-3">Description</label>
+			{% if desc %}
+				<textarea class="col-6" rows="3" placeholder="Description" name="description" >{{ desc }}</textarea>
+			{% else %}
+				<textarea class="col-6" rows="3" placeholder="Description" name="description" ></textarea>
+			{% endif %}
+			<div class="col-3"></div>
+		</div>
+		<div class="row-simple">
+			<label class="col-3">Leave Type</label>
+			<select class="col-6" name="leaveType">
+				<option value="0">--Select--</option>
+				{% for lt in leaveTypes %}
+					<option value="lt.pk">{{ lt.name }}</option>
+				{% endfor %}
+			</select>
+			<div class="col-3"></div>
+		</div>
+		<div class="row-simple">
+			<div class="col-3"></div>
+			<input class="col-6" type="submit" value="Apply" />
+			<div class="col-3"></div>
 		</div>
 	</form>
+	<div class="col-3"></div>
 </div>
 
 {% endblock %}
