@@ -5,63 +5,67 @@
 
 <div class="row">
 	<div class="col-3"></div>
-	<form class="col-6 box" method="post">
-		{% csrf_token %}
+	<div class="col-6">
 		<div class="row-simple">
-			<h3 class="col-12 text-center">Advance Leave</h3>
-		</div>
-		{% if errors %}
-			<div class="row-simple red">
-				<div class="col-12 text-center">{{ errors.0 }}</div>
-			</div>
-		{% endif %}
-		<div class="row-simple">
-			<label class="col-3">From</label>
-			{% if dateFrom %}
-				<input class="col-6" value="{{ dateFrom|date:"Y-m-d" }}" type="date" name="dateFrom" />
-			{% else %}
-				<input class="col-6" type="date" name="dateFrom" />
-			{% endif %}
-			<div class="col-3"></div>
+			<div class="col-12 text-center theme-color font-x-large"><b>Advance Leave</b></div>
 		</div>
 		<div class="row-simple">
-			<label class="col-3">To</label>
-			{% if dateTo %}
-				<input class="col-6" value="{{ dateTo|date:"Y-m-d" }}" type="date" name="dateTo" />
-			{% else %}
-				<input class="col-6" type="date" name="dateTo" />
-			{% endif %}
-			<div class="col-3"></div>
-		</div>
-		<div class="row-simple">
-			<label class="col-3">Description</label>
-			{% if desc %}
-				<textarea class="col-6" rows="3" placeholder="Description" name="description" >{{ desc }}</textarea>
-			{% else %}
-				<textarea class="col-6" rows="3" placeholder="Description" name="description" ></textarea>
-			{% endif %}
-			<div class="col-3"></div>
-		</div>
-		<div class="row-simple">
-			<label class="col-3">Leave Type</label>
-			<select class="col-6" name="leaveType">
-				<option value="0">--Select--</option>
-				{% for lt in leaveTypes %}
-					{% if lt.pk == leaveType %}
-						<option selected="selected" value="{{ lt.pk }}">{{ lt.name }}</option>
+			<form class="box col-12" method="post">
+				{% csrf_token %}
+				{% if errors %}
+					<div class="row-simple red">
+						<div class="col-12 text-center">{{ errors.0 }}</div>
+					</div>
+				{% endif %}
+				<div class="row-simple">
+					<label class="col-3">From</label>
+					{% if dateFrom %}
+						<input class="col-6" value="{{ dateFrom|date:"Y-m-d" }}" type="date" name="dateFrom" />
 					{% else %}
-						<option value="{{ lt.pk }}">{{ lt.name }}</option>
+						<input class="col-6" type="date" name="dateFrom" />
 					{% endif %}
-				{% endfor %}
-			</select>
-			<div class="col-3"></div>
+					<div class="col-3"></div>
+				</div>
+				<div class="row-simple">
+					<label class="col-3">To</label>
+					{% if dateTo %}
+						<input class="col-6" value="{{ dateTo|date:"Y-m-d" }}" type="date" name="dateTo" />
+					{% else %}
+						<input class="col-6" type="date" name="dateTo" />
+					{% endif %}
+					<div class="col-3"></div>
+				</div>
+				<div class="row-simple">
+					<label class="col-3">Description</label>
+					{% if desc %}
+						<textarea class="col-6" rows="3" placeholder="Description" name="description" >{{ desc }}</textarea>
+					{% else %}
+						<textarea class="col-6" rows="3" placeholder="Description" name="description" ></textarea>
+					{% endif %}
+					<div class="col-3"></div>
+				</div>
+				<div class="row-simple">
+					<label class="col-3">Leave Type</label>
+					<select class="col-6" name="leaveType">
+						<option value="0">--Select--</option>
+						{% for lt in leaveTypes %}
+							{% if lt.pk == leaveType %}
+								<option selected="selected" value="{{ lt.pk }}">{{ lt.name }}</option>
+							{% else %}
+								<option value="{{ lt.pk }}">{{ lt.name }}</option>
+							{% endif %}
+						{% endfor %}
+					</select>
+					<div class="col-3"></div>
+				</div>
+				<div class="row-simple">
+					<div class="col-3"></div>
+					<input class="col-6" type="submit" value="Apply" />
+					<div class="col-3"></div>
+				</div>
+			</form>
 		</div>
-		<div class="row-simple">
-			<div class="col-3"></div>
-			<input class="col-6" type="submit" value="Apply" />
-			<div class="col-3"></div>
-		</div>
-	</form>
+	</div>
 	<div class="col-3"></div>
 </div>
 

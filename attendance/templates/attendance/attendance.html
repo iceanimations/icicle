@@ -4,10 +4,10 @@
 
 {% if user %}
 <!-- year box -->
-<div class="row">
+<div class="row-simple">
 	<div class="col-4"></div>
-	<form class="col-4 box">
-		<div class="row-simple">
+	<form class="col-4">
+		<div class="row-simple box">
 			<label class="col-4">Year</label>
 			<select class="col-4" name="year" onchange="this.form.submit()">
 				{% for yr in years %}
@@ -33,13 +33,15 @@
 <div class="row">
 	<!-- absent box -->
 	<div class="col-5 simple-container">
-		<h3 class="text-center">Absents</h3>
+		<div class="row-simple">
+			<div class="col-12 text-center theme-color font-x-large"><b>Absents</b></div>
+		</div>
 		{% if user %}
 		<!-- leave type selection -->
 		<form method="post">
 			{% csrf_token %}
 			<input type="hidden" name="year" value="{{ year }}" />
-			<div class="row box">
+			<div class="row-simple box">
 				<select name="leaveType" class="col-8">
 					<option value="0">--Select Type--</option>
 					{% for lt in leaveTypes %}
@@ -85,7 +87,9 @@
 	</div>
 	<!-- leave box -->
 	<div class="col-4 simple-container">
-		<h3 class="text-center">Leaves</h3>
+		<div class="row-simple">
+			<div class="col-12 text-center theme-color font-x-large"><b>Leaves</b></div>
+		</div>
 		{% for lv in leaves %}
 			<div class="row-simple box">
 				<div class="col-12">
@@ -127,7 +131,9 @@
 	</div>
 	<!-- availabe leave box -->
 	<div class="col-3 simple-container">
-		<h3 class="text-center">Availed Leaves</h3>
+		<div class="row-simple">
+			<div class="col-12 text-center theme-color font-x-large"><b>Availed</b></div>
+		</div>
 		{% for lt in leaveTypes %}
 		<div class="row-simple box">
 			<div class="col-12">
