@@ -49,8 +49,7 @@ def listAttendance(request, errors=None, selected_data=None):
         # filter results for specified year
         context['leaves'] = user.allLeaves().filter(date__year=year)
         
-        context['leaveTypes'] = LeaveType.objects.filter(availability__in=[
-                                                    user.currentType()])
+        context['leaveTypes'] = user.availableLeaveTypes()
         # list of years from first attendance's year to current year
         context['years'] = list(reversed([year for year in range(
                             Attendance.objects.all(
@@ -81,8 +80,9 @@ def attendance(request):
             #current quota + last year remaining quota
             year = request.POST.get('year')
             if dates and lt:
-                if len(dates) + user.availedLeaves(lt.name, year) > lt.quota:
-                    errors.append('Number of leave(s) requested exceeded the'+
+                if len(dates) + user.availedLeaves(lt.name, year,
+                                                   pending=True) > lt.quota:
+                    errors.append('Number of leaves requested exceededs the'+
                                   ' allowed quota for selected leave type')
             if errors:
                 data = {'descriptions': []}
@@ -110,8 +110,7 @@ def advance_leave(request):
     user = loggedInUser(request)
     if user:
         context = {'user': user}
-        context['leaveTypes'] = LeaveType.objects.filter(
-                                    availability__in=[user.currentType()])
+        context['leaveTypes'] = user.availableLeaveTypes()
         if request.method == 'GET':
             return render(request, 'attendance/advance_leave.html',
                           context=context)
@@ -121,28 +120,37 @@ def advance_leave(request):
             dateTo = request.POST.get('dateTo')
             desc = request.POST.get('description')
             leaveType = int(request.POST.get('leaveType'))
+            print ('Type:', type(dateFrom))
             if dateFrom and dateTo:
+                dateFrom = date.fromisoformat(dateFrom)
+                dateTo = date.fromisoformat(dateTo)
                 if desc != '':
                     if leaveType != 0:
                         leaveType = LeaveType.objects.get(pk=leaveType)
-                        if dateFrom < dateTo:
-                            days = dateTo - dateFrom
-                            #years may be different!
-                            yearFrom = dateFrom.year
-                            yearTo = dateTo.year
-                            availedLeaves = user.availedLeaves(leaveType.name,
-                                                               yearFrom)
-                            quota = leaveType.quota
-                            if yearTo - yearFrom == 1:
-                                availedLeaves += availedLeaves(leaveType.name,
-                                                               yearTo)
-                                quota *= 2 # double the quota
+                        if dateFrom <= dateTo:
+                            if dateFrom > date.today():
+                                # get number of days
+                                # include the starting date by adding 1
+                                days = (dateTo - dateFrom).days + 1
+                                #years may be different!
+                                yearFrom = dateFrom.year
+                                yearTo = dateTo.year
+                                availedLeaves = user.availedLeaves(
+                                                    leaveType.name,
+                                                    yearFrom,
+                                                    pending=True)
+                                quota = leaveType.quota
+                                if yearTo - yearFrom == 1:
+                                    availedLeaves += user.availedLeaves(
+                                                            leaveType.name,
+                                                            yearTo)
+                                    quota *= 2 # double the quota
                                 if days > quota - availedLeaves:
                                     errors.append('Number of days selected'+
                                                   ' exceeds the available'+
                                                   ' quota')
                                 else:
-                                    for day in range(days + 1):
+                                    for day in range(days):
                                         dt = dateFrom + timedelta(day)
                                         if not user.isWeekend(dt,
                                             optional=True) and \
@@ -157,9 +165,10 @@ def advance_leave(request):
                                                 date=dt,
                                                 leaveType=leaveType,
                                                 description=desc)
-                                    return redirect('/attenance')
+                                    return redirect('/attendance')
                             else:
-                                errors.append('Too many years selected')
+                                errors.append('Date From cannot be less than'+
+                                              ' or equal to Today')
                         else:
                             errors.append('Date To can not be less than From')
                     else:
@@ -171,7 +180,8 @@ def advance_leave(request):
             if errors:
                 context['dateFrom'] = dateFrom
                 context['dateTo'] = dateTo
-                context['leaveType'] = leaveType
+                context['leaveType'] = leaveType if isinstance(leaveType, int) \
+                                                 else leaveType.pk
                 context['desc'] = desc
                 context['errors'] = errors
                 return render(request, 'attendance/advance_leave.html',

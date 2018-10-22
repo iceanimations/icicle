@@ -17,12 +17,20 @@
 		{% endif %}
 		<div class="row-simple">
 			<label class="col-3">From</label>
-			<input class="col-6" type="date" name="dateFrom" />
+			{% if dateFrom %}
+				<input class="col-6" value="{{ dateFrom|date:"Y-m-d" }}" type="date" name="dateFrom" />
+			{% else %}
+				<input class="col-6" type="date" name="dateFrom" />
+			{% endif %}
 			<div class="col-3"></div>
 		</div>
 		<div class="row-simple">
 			<label class="col-3">To</label>
-			<input class="col-6" type="date" name="dateTo" />
+			{% if dateTo %}
+				<input class="col-6" value="{{ dateTo|date:"Y-m-d" }}" type="date" name="dateTo" />
+			{% else %}
+				<input class="col-6" type="date" name="dateTo" />
+			{% endif %}
 			<div class="col-3"></div>
 		</div>
 		<div class="row-simple">
@@ -39,7 +47,11 @@
 			<select class="col-6" name="leaveType">
 				<option value="0">--Select--</option>
 				{% for lt in leaveTypes %}
-					<option value="lt.pk">{{ lt.name }}</option>
+					{% if lt.pk == leaveType %}
+						<option selected="selected" value="{{ lt.pk }}">{{ lt.name }}</option>
+					{% else %}
+						<option value="{{ lt.pk }}">{{ lt.name }}</option>
+					{% endif %}
 				{% endfor %}
 			</select>
 			<div class="col-3"></div>

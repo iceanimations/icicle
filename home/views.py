@@ -6,7 +6,7 @@ from attendance.models import Shift, EmployeeShift
 from icicle import auth, utilities as util
 import json
 import os
-
+from datetime import date
 
 def home(request):
     try: # deal the situation when user logged in but got deleted from database
@@ -69,7 +69,6 @@ def editEmployee(request):
             code = request.POST.get('code', None)
             dt = None
             jd = request.POST.get('joinDate', None)
-            #return HttpResponse(jd)
             ed = request.POST.get('endDate', None)
             if isActive:
                 dt = jd
@@ -151,8 +150,14 @@ def editEmployee(request):
                 empTemp.name = name
                 empTemp.isActive = isActive
                 empTemp.code = code
-                empTemp.joiningDate = jd
-                empTemp.endingDate = ed
+                try:
+                    empTemp.joiningDate = date.fromisoformat(jd)
+                except ValueError:
+                    empTemp.joiningDate = jd
+                try:
+                    empTemp.endingDate = date.fromisoformat(ed)
+                except ValueError:
+                    empTemp.endingDate = ed
                 empTemp.username = username
                 empTemp.email = email
                 empTemp.fatherName = fatherName
@@ -160,7 +165,10 @@ def editEmployee(request):
                 empTemp.mobile = mobile
                 empTemp.phone = phone
                 empTemp.cnic = cnic
-                empTemp.dob = dob
+                try:
+                    empTemp.dob = date.fromisoformat(dob)
+                except ValueError:
+                    empTemp.dob = dob
                 empTemp.currentDept = dept
                 empTemp.currentShift = shift
                 empTemp.currentDesignation = designation

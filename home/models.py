@@ -167,20 +167,29 @@ class Employee(models.Model):
         return apps.get_model('attendance', 'Attendance'
                               ).objects.filter(status=status).order_by('date')
     
-    def availedLeaves(self, typ, year, cnt=True):
+    def availedLeaves(self, typ, year, pending=False, cnt=True):
         typ = apps.get_model('attendance',
                              'LeaveType').objects.get(name=typ)
+        statuses = [apps.get_model('attendance',
+                              'LeaveRequest'
+                              ).APPROVED]
+        if pending:
+            statuses.append(apps.get_model('attendance',
+                              'LeaveRequest'
+                              ).PENDING)
         als =  apps.get_model('attendance',
                               'LeaveRequest'
                               ).objects.filter(
                               employee=self,
-                              status=apps.get_model('attendance',
-                              'LeaveRequest'
-                              ).APPROVED,
+                              status__in=statuses,
                               leaveType=typ)
         if not typ.onceOnly: als = als.filter(date__year=year)
         if cnt: als = len(als)
         return als
+    
+    def availableLeaveTypes(self):
+        return apps.get_model('attendance', 'LeaveType').objects.filter(
+                                    availability__in=[self.currentType()])
 
 class EmployeePeriod(models.Model):
     employee = models.ForeignKey(Employee, null=True, blank=True,
