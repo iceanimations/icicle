@@ -476,7 +476,6 @@ class Entry(models.Model):
     
     @property
     def employee(self):
-        # analyse employeeperiod__code param
         return apps.get_model('home', 'Employee'
                               ).objects.filter(employeeperiod__code=self.uid
                                                ).first()

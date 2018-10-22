@@ -190,6 +190,14 @@ class Employee(models.Model):
     def availableLeaveTypes(self):
         return apps.get_model('attendance', 'LeaveType').objects.filter(
                                     availability__in=[self.currentType()])
+    
+    def inOutStatus(self):
+        session = apps.get_model('attendance', 'Session').objects.filter(
+                        employee=self).order_by('inTime').last()
+        if session:
+            return session.outTime is None
+        return False
+        
 
 class EmployeePeriod(models.Model):
     employee = models.ForeignKey(Employee, null=True, blank=True,

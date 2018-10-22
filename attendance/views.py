@@ -188,3 +188,10 @@ def advance_leave(request):
                               context=context)
     else:
         return redirect('/login')
+
+def remove_pending_leave(request):
+    pks = request.POST.getlist('leaves')
+    if pks:
+        for pk in pks:
+            LeaveRequest.objects.get(pk=pk).delete()
+    return redirect('/attendance')

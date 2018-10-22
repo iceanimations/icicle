@@ -34,6 +34,14 @@
 							<b> {{ user.currentType }} </b>
 						</div>
 					</div>
+					<div class="row">
+						<label class="col-3">Attendance:</label>
+						{% if user.inOutStatus %}
+							<span class="capsule green-back">In</span>
+						{% else %}
+							<span class="capsule red-back">Out</span>
+						{% endif %}
+					</div>
 				</div>
 			</div>
 		</div>

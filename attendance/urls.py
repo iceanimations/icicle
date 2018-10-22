@@ -9,5 +9,6 @@ from . import views
 
 urlpatterns = [
                path('', views.attendance),
-               path('advance/', views.advance_leave)
+               path('advance/', views.advance_leave),
+               path('remove/', views.remove_pending_leave)
 ]

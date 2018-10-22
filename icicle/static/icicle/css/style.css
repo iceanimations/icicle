@@ -39,6 +39,24 @@ body {
 	font-size: 8pt;
 }
 
+.capsule {
+	border-radius: 7px;
+	color: white;
+	padding: 3px 10px;
+}
+
+.green-back {
+	background-color: green;
+}
+
+.orange-back {
+	background-color: orange;
+}
+
+.red-back {
+	background-color: red;
+}
+
 form input[type=text], form input[type=password],
 form input[type=submit], form input[type=date], form select, textarea{
 	background-color: white;
@@ -124,8 +142,9 @@ textarea {
 }
 
 .simple-container {
-	background-color: #cccccc;
-	border: solid 1px gray;
+/*	background-color: #cccccc; */
+	border-top: solid 1px #0070a0;
+	border-left: solid 1px #0070a0;
 	margin: 10px;
 }
 
@@ -141,6 +160,8 @@ textarea {
 	background-color: white;
 	box-shadow: 0 0 10px #808080;
 	color: #0070a0;
+/*	border-left: solid 1px #0070a0; */
+	border-top: solid 2px #0070a0; 
 }
 
 

@@ -90,44 +90,53 @@
 		<div class="row-simple">
 			<div class="col-12 text-center theme-color font-x-large"><b>Leaves</b></div>
 		</div>
-		{% for lv in leaves %}
-			<div class="row-simple box">
-				<div class="col-12">
-					<div class="row-simple">
-						<div class="col-6">
-							<b>{{ lv.date|date:"Y-m-d" }}</b>
-						</div>
-						<div class="col-6 gray font-small text-right">
-								<i>{{ lv.date|date:"l" }}</i>
-						</div>
-					</div>
-					<div class="row-simple">
-						<div class="col-6 font-small">
-							{{ lv.leaveType.name }}
-						</div>
-						<div class="col-6 text-right">Status:
-							<i>
-								{% if lv.status == "approved" %}
-									<span class="col-12 green">
-										{{ lv.nice_status }}
-									</span>
-								{%endif%}
+		<form method="post" action="remove/">
+			{% csrf_token %}
+			<div class="row-simple">
+				<input class="col-12" type="submit" value="Remove" />
+			</div>
+			{% for lv in leaves %}
+				<div class="row-simple box">
+					<div class="col-12">
+						<div class="row-simple">
+							<div class="col-6">
+								<b>{{ lv.date|date:"Y-m-d" }}</b>
 								{% if lv.status == "pending" %}
-									<span class="col-12 orange">
-										{{ lv.nice_status }}
-									</span>
-								{%endif%}
-								{% if lv.status == "rejected" %}
-									<span class="col-12 red">
-										{{ lv.nice_status }}
-									</span>
-								{%endif%}
-							</i>
+									<input name="leaves" type="checkbox" value="{{ lv.pk }}" />
+								{% endif %}
+							</div>
+							<div class="col-6 gray font-small text-right">
+									<i>{{ lv.date|date:"l" }}</i>
+							</div>
+						</div>
+						<div class="row-simple">
+							<div class="col-6 font-small">
+								{{ lv.leaveType.name }}
+							</div>
+							<div class="col-6 text-right">Status:
+								<i>
+									{% if lv.status == "approved" %}
+										<span class="col-12 capsule green-back">
+											{{ lv.nice_status }}
+										</span>
+									{%endif%}
+									{% if lv.status == "pending" %}
+										<span class="col-12 capsule orange-back">
+											{{ lv.nice_status }}
+										</span>
+									{%endif%}
+									{% if lv.status == "rejected" %}
+										<span class="col-12 capsule red-back">
+											{{ lv.nice_status }}
+										</span>
+									{%endif%}
+								</i>
+							</div>
 						</div>
 					</div>
 				</div>
-			</div>
-		{% endfor %}
+			{% endfor %}
+		</form>
 	</div>
 	<!-- availabe leave box -->
 	<div class="col-3 simple-container">
