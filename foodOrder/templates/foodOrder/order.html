@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %} | Food Order {% endblock %}
+{% block content %}
+
+<div class="row">
+	<div class="col-3"></div>
+	<div class="col-6">
+		<div class="row-simple">
+			<div class="theme-color font-x-large col-12 text-center">
+				<b>Food Order</b>
+			</div>
+		</div>
+		<div class="row-simple">
+			<form method="post" class="col-12 box">
+				{% csrf_token %}
+				<div class="row-simple">
+					<label class="col-3">Food</label>
+					<select class="col-6" name="food">
+						{% for food in foods %}
+							<option value="{{ food.pk }}">{{ food.name }} ({{ food.vendor }})</option>
+						{% endfor %}
+					</select>
+					<div class="col-3"></div>
+				</div>
+				<div class="row-simple">
+					<label class="col-3">Project</label>
+					<select class="col-6" name="project">
+						{% for project in projects %}
+							<option value="{{ project.pk }}">{{ project.name }}</option>
+						{% endfor %}
+					</select>
+					<div class="col-3"></div>
+				</div>
+				<div class="row-simple">
+					<div class="col-3"></div>
+					<input class="col-6" type="submit" value="Order" />
+					<div class="col-3"></div>
+				</div>
+			</form>
+		</div>
+	</div>
+	<div class="col-3"></div>
+</div>
+
+{% endblock %}
