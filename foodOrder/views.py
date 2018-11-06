@@ -19,4 +19,4 @@ def home(request):
             #models.FoodOrder.objects.get(employee=user, food=food, project=project)
             return render(request, 'foodOrder/order.html', context)
     else:
-        redirect('/login')
+        return redirect('/login')

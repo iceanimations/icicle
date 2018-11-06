@@ -72,7 +72,7 @@ form select:focus {
 .box-shadow-green {
 	border: solid 1px #0070a0;
 	box-shadow: 0 0 5px #0070a0;
-	
+
 }
 
 form input[type=submit]:hover {
@@ -161,7 +161,7 @@ textarea {
 	box-shadow: 0 0 10px #808080;
 	color: #0070a0;
 /*	border-left: solid 1px #0070a0; */
-	border-top: solid 2px #0070a0; 
+	border-top: solid 2px #0070a0;
 }
 
 

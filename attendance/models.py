@@ -28,7 +28,7 @@ class LeaveType(models.Model):
     onceOnly = models.BooleanField(verbose_name='Once per Employee',
                                    default=False)
     availability = models.ManyToManyField('home.EmployeeType')
-    
+
     def __str__(self):
         return self.name
 
@@ -44,25 +44,25 @@ class Attendance(models.Model):
     HOLIDAY = 'holiday'
     WEEKEND = 'weekend'
     LEAVE = 'leave'
-    
+
     date = models.DateField()
     employee = models.ForeignKey('home.Employee', null=True, blank=True,
                                  on_delete=models.SET_NULL)
     status = models.CharField(max_length=20, blank=True)
-    
+
     class Meta:
         unique_together = ('employee', 'date',)
-    
+
     def __str__(self):
         return str(self.date) + ' - ' + self.employee.name +' - '+ self.status
-    
+
     # use this manager only for reading
     objects = AttManager()
-    
+
     # use this manager for writing and modifying
     # prevents recursion in markMissingAttendances
     objects2 = models.Manager()
-    
+
     @classmethod
     def markMissingAttendances(cls):
         for emp in apps.get_model('home', 'Employee').objects.all():
@@ -82,17 +82,17 @@ class Attendance(models.Model):
                             if lv:
                                 status = cls.LEAVE
                         cls.markAttendance(emp, status, dt)
-                
+
     @classmethod
     def missingAttendances(cls, emp):
         try:
             # get the starting date of current shift
             _, start = emp.currentShift(start=True)
-        except: return 
+        except: return
         attendances = Attendance.objects2.values_list('date', flat=True
                                         ).filter(employee=emp
                                         ).order_by('date')
-        
+
         if attendances:
             dates = { start + timedelta(day)
                      for day in range((date.today() - attendances[0]).days) }
@@ -110,11 +110,11 @@ class LeaveRequest(models.Model):
     APPROVED = 'approved'
     REJECTED = 'rejected'
     PENDING = 'pending'
-    
+
     STATUSES = ((APPROVED, 'Approved'),
                 (REJECTED, 'Rejected'),
                 (PENDING, 'Pending'))
-    
+
     # fields filled by applicant
     employee = models.ForeignKey('home.Employee',
                                  on_delete=models.CASCADE,
@@ -125,8 +125,8 @@ class LeaveRequest(models.Model):
                                   on_delete=models.CASCADE)
     description = models.TextField()
     datetime = models.DateTimeField(auto_now_add=True)
-    
-    
+
+
     # fields filled by approvee
     approvalDate = models.DateTimeField(null=True)
     approvedBy = models.ForeignKey('home.Employee', null=True, blank=True,
@@ -134,22 +134,22 @@ class LeaveRequest(models.Model):
                                    related_name='approvedBy')
     status = models.CharField(max_length=20, default=PENDING)
     remarks = models.TextField(blank=True)
-    
+
     def __str__(self):
         return self.employee.name +' - '+ str(self.date)
-    
+
     def approve(self, approvedBy, remarks):
         self.approvedBy = approvedBy
         self.status = LeaveRequest.APPROVED
         self.remarks = remarks
         self.save()
-    
+
     def reject(self, rejectedBy, remarks):
         self.approvedBy = rejectedBy
         self.status = LeaveRequest.REJECTED
         self.remarks = remarks
         self.save()
-    
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         att = Attendance.objects.filter(employee=self.employee,
@@ -158,7 +158,7 @@ class LeaveRequest(models.Model):
             att = att[0]
         if self.status == LeaveRequest.APPROVED:
             if att:
-                if att.status == Attendance.ABSENT:                
+                if att.status == Attendance.ABSENT:
                     att.status = Attendance.LEAVE
                     att.save()
             else:
@@ -172,7 +172,7 @@ class LeaveRequest(models.Model):
                 att.save()
         else: # when self.status pending
             pass
-    
+
     def nice_status(self):
         for status, nice in LeaveRequest.STATUSES:
             if self.status == status:
@@ -181,10 +181,10 @@ class LeaveRequest(models.Model):
 class Day(models.Model):
     use_for_related_fields = True
     name = models.CharField(max_length=20)
-    
+
     def __str__(self):
         return self.name
-    
+
 class EmployeeShift(models.Model):
     employee = models.ForeignKey('home.Employee', null=True, blank=True,
                                  on_delete=models.SET_NULL)
@@ -202,21 +202,21 @@ class EmployeeShift(models.Model):
             else:
                 lastShift.dateTo = date.today() - timedelta(1)
                 lastShift.save()
-    
+
     @classmethod
     def lastShift(cls, emp):
         return EmployeeShift.objects.filter(employee=emp
                                         ).order_by('dateFrom').last()
-                                        
+
 class Shift(models.Model):
     #when emp marks attendance AHEAD_PERIOD hours before the shift start time
-    
+
     name = models.CharField(max_length=30)
     days = models.ManyToManyField(Day, through='DayOfShift')
-    
+
     def __str__(self):
         return self.name
-    
+
     def weekend(self, optional=False):
         we = []
         off = [d.day for d in self.dayofshift_set.filter(status=DayOfShift.OFF)]
@@ -231,7 +231,7 @@ class Shift(models.Model):
         day = dt.strftime('%A')
         statuses = [DayOfShift.OFF]
         if optional:
-            statuses.append(DayOfShift.OPT) 
+            statuses.append(DayOfShift.OPT)
         return bool(self.dayofshift_set.filter(day__name=day,
                                                status__in=statuses))
 
@@ -253,10 +253,10 @@ class Shift(models.Model):
                                 tr[1].hour, tr[1].minute, tr[1].second))
             if tr[2]:
                 end_time += timedelta(days=1)
-            
+
             if dt >= start_time and dt < end_time:
                 return (start_time, end_time)
-        
+
         # get the previous day if inTime has crossed the date
         yesterday = dt.strftime('%A')
         tr = self.dayofshift_set.filter(day__name=yesterday).values_list(
@@ -273,18 +273,18 @@ class Shift(models.Model):
                 start_time -= timedelta(days=1)
             if dt >= start_time and dt < end_time:
                 return (start_time, end_time)
-    
+
 class DayOfShift(models.Model):
     use_for_related_fields = True
     ON = 'on'
     OFF = 'off' # adding this to force to specify range
     OPT = 'opt'
-    
+
     STATUS_CHOICES = ((ON, 'On'),
                       (OPT, 'Optional'),
                       (OFF, 'Off')
                       )
-    
+
     shift = models.ForeignKey(Shift, null=True, on_delete=models.SET_NULL)
     day = models.ForeignKey(Day, null=True, on_delete=models.SET_NULL)
     timeFrom = models.TimeField(verbose_name='From')
@@ -296,14 +296,14 @@ class DayOfShift(models.Model):
 
     def __str__(self):
         return ', '.join([self.day.name])
-    
+
     @classmethod
     def ongoingEmployees(cls):
         #TODO: faulty function, check for time comparison
         now = datetime.now().time()
         ongoingDayOfShift = DayOfShift.objects.filter(
                                     timeFrom__lte=now,
-                                    timeTo__gt=now) 
+                                    timeTo__gt=now)
         emps = []
         for shift in list(set([ogdos.shift for ogdos in ongoingDayOfShift])):
             for emp in apps.get_model('home', 'Employee').objects.all():
@@ -314,10 +314,10 @@ class DayOfShift(models.Model):
 class Holiday(models.Model):
     name = models.CharField(max_length=30)
     date = models.DateField(unique=True)
-    
+
     def __str__(self):
         return self.name +' - '+ str(self.date)
-    
+
     @classmethod
     def isHoliday(cls, dt=None):
         if not dt: dt = date.today()
@@ -328,51 +328,51 @@ class Session(models.Model):
     MANUAL = 'manual'
     COMPUTED = 'computed'
     SELF = 'self'
-    
+
     employee = models.ForeignKey('home.Employee', null=True,
                                  on_delete=models.SET_NULL)
-    
+
     inTime = models.DateTimeField(null=True, default=None)
     outTime = models.DateTimeField(null=True, default=None)
-    
+
     inType = models.CharField(max_length=15, blank=True)
     outType = models.CharField(max_length=15, blank=True)
-    
+
     def localInTime(self):
         return timezone.localtime(self.inTime)
-    
+
     def localOutTime(self):
         return timezone.localtime(self.outTime)
-    
+
     def __str__(self):
         return (self.employee.name + '(' + str(self.inTime) +
                 '-' + str(self.outTime) + ')')
-        
+
     def isComplete(self):
         # returns true if outTime is not None
         return bool(self.outTime)
-    
+
     @classmethod
     def previousSession(cls, employee, dt):
         return cls.objects.filter(employee=employee, inTime__lt=dt
                                   ).order_by('inTime').last()
-    
+
     @classmethod
     def nextSession(cls, employee, dt):
         return cls.objects.filter(employee=employee, inTime__gte=dt
                                   ).order_by('inTime').first()
-    
+
     @classmethod
     def splitBeforeShiftEntry(cls):
         #TODO: implement this
         '''splits the session if inTime is less than shift start time
         and outTime is None'''
-        
+
         for session in Session.objects.filter(outTime__isnull=True):
             if session.localInTime().time() < session.employee.shiftStartingTime():
                 pass
-            
-                                  
+
+
     def splitable_save(self):
         # split the session at shift start time
         if self.outTime is None:
@@ -414,7 +414,7 @@ class Session(models.Model):
                             inType=self.COMPUTED,
                             outTime=outTime,
                             outType=outType).save()
-            else: 
+            else:
                 Session(employee=self.employee,
                         inTime=start_times[-1],
                         inType=self.COMPUTED,
@@ -422,7 +422,7 @@ class Session(models.Model):
                         outType=outType).save()
         else:
             self.save()
-    
+
     def save(self):
         s = self.employee.currentShift()
         if s:
@@ -433,9 +433,9 @@ class Session(models.Model):
                                           Attendance.PRESENT,
                                           tr[0].date())
         super().save()
-        
-       
-    
+
+
+
 
 class Entry(models.Model):
     IN = 'in'
@@ -446,13 +446,13 @@ class Entry(models.Model):
         3: IN,
         4: OUT
     }
-    
+
     uid = models.IntegerField()
     tid = models.IntegerField()
     # add timezone info, if server and user are in diff timezones
     date = models.DateField()
     time = models.TimeField()
-    
+
     @property
     def datetime(self):
         # datebase time is in utc, so add timezone info to self.datetime
@@ -465,27 +465,27 @@ class Entry(models.Model):
                         self.time.second)
         tz = pytz.timezone(settings.TIME_ZONE)
         return tz.localize(dt)
-    
+
     @property
     def entryType(self):
         return Entry.TID_TO_INOUT[self.tid]
-    
+
     @property
     def status(self):
         return self.TID_TO_INOUT[self.tid]
-    
+
     @property
     def employee(self):
         return apps.get_model('home', 'Employee'
                               ).objects.filter(employeeperiod__code=self.uid
                                                ).first()
-    
+
     def save(self, *args, typ=Session.BIOMETRIC, **kwargs):
         if self.employee is None:
             raise ValueError('No Employee')
         if self.tid not in self.TID_TO_INOUT:
             raise ValueError('No TID')
-        
+
         if self.status == self.IN:
             ps = Session.previousSession(self.employee, self.datetime)
             if ps:
@@ -502,7 +502,7 @@ class Entry(models.Model):
                             ns.splitable_save()
                         else:
                             s = Session(employee=self.employee, inTime=self.datetime,
-                                inType=typ)                    
+                                inType=typ)
                             s.outTime = ns.inTime - timedelta(seconds=1)
                             s.outType = Session.COMPUTED
                             s.splitable_save()
@@ -529,7 +529,7 @@ class Entry(models.Model):
                                 s = Session(employee=self.employee,
                                             inTime=self.datetime,
                                             inType=typ)
-                                
+
                                 s.outTime = ns.inTime - timedelta(seconds=1)
                                 s.outType = Session.COMPUTED
                                 s.splitable_save()
@@ -537,8 +537,8 @@ class Entry(models.Model):
                             Session(employee=self.employee,
                                             inTime=self.datetime,
                                             inType=typ).splitable_save()
-                            
-                            
+
+
             else: # when no previous session exist
                 ns = Session.nextSession(self.employee, self.datetime)
                 if ns:

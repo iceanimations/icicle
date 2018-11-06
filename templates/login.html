@@ -3,28 +3,36 @@
 {% block content %}
 <div class="row">
 	<div class="col-3"></div>
-	<div class="col-6 box">
-		<div class="row">
+	<div class="col-6">
+		<div class="row-simple">
+			<div class="col-12 theme-color text-center font-x-large">
+				<b>Login</b>
+			</div>
+		</div>
+		<div class="row-simple box">
 			<form class="col-12" action="" method="post">
 				{% csrf_token %}
-				<div class="row">
+				<div class="row-simple">
 					<label class="col-3">Username</label>
 					<input type="text" name="username" class="col-6"/>
+					<div class="col-3"></div>
 				</div>
-				<div class="row">
+				<div class="row-simple">
 					<label class="col-3">Password</label>
 					<input type="password" name="password" class="col-6"/>
+					<div class="col-3"></div>
 				</div>
-				<div class="row">
+				<div class="row-simple">
 					<label class="col-3">Remember me</label>
 					<input type="checkbox" name="rememberMe"/>
 				</div>
-				<div class="row">
+				<div class="row-simple">
 					<div class="col-3"></div>
 					<input type="submit" value="Login" class="col-6"/>
+					<div class="col-3"></div>
 				</div>
 				{% if errors %}
-				<div class="row">
+				<div class="row-simple">
 					<div class="col-12 red text-center">
 							{{ errors.0 }}
 					</div>
