@@ -48,7 +48,7 @@ def listAttendance(request, errors=None, selected_data=None):
         context['year'] = year
         # filter results for specified year
         context['leaves'] = user.allLeaves().filter(date__year=year)
-        
+
         context['leaveTypes'] = user.availableLeaveTypes()
         # list of years from first attendance's year to current year
         context['years'] = list(reversed([year for year in range(
@@ -195,3 +195,16 @@ def remove_pending_leave(request):
         for pk in pks:
             LeaveRequest.objects.get(pk=pk).delete()
     return redirect('/attendance')
+
+def approve_leaves(request):
+    user = loggedInUser(request)
+    if user:
+        context = {'user': user}
+        context['employees_with_leaves'] = Employee.objects.filter(
+                        pk__in=[lv.employee.pk for lv in
+                        LeaveRequest.objects.filter(
+                        status=LeaveRequest.PENDING)])
+        return render(request, 'attendance/leave_approval.html',
+                      context=context)
+    else:
+        return redirect('/login')

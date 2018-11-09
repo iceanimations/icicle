@@ -6,74 +6,74 @@ from django.apps import apps
 class EmployeeType(models.Model):
     type = models.CharField(max_length=20, verbose_name='Employee Type',
                             unique=True)
-    
+
     def __str__(self):
         return self.type
-    
+
 class Designation(models.Model):
     title = models.CharField(max_length=30, unique=True)
-    
+
     def __str__(self):
         return self.title
-    
+
 def rename_photo(instance, name):
     return 'home/employee/photo/{}.{}'.format(instance.pk, name.split('.')[-1])
 
 class Employee(models.Model):
-    
+
     name = models.CharField(max_length=50)
     email = models.CharField(max_length=50, null=True, blank=True, unique=True)
     photo = models.ImageField(upload_to=rename_photo, blank=True)
     username = models.CharField(max_length=50, unique=True)
     fatherName = models.CharField(max_length=50, verbose_name='Father\'s Name',
-                                  blank=True, null=True)    
+                                  blank=True, null=True)
     dob = models.DateField(verbose_name='Date of Birth', blank=True, null=True)
     address = models.CharField(max_length=200, blank=True, null=True)
     phone = models.CharField(max_length=15, blank=True, null=True)
     mobile = models.CharField(max_length=15, blank=True, null=True, unique=True)
     cnic = models.CharField(max_length=13, blank=True, null=True, unique=True)
-    
+
     dept = models.ManyToManyField('Department', through='EmployeeDepartment')
-    
+
     type = models.ManyToManyField(EmployeeType, through='EmployeeTypeMapping')
     shift = models.ManyToManyField('attendance.Shift',
                               through='attendance.EmployeeShift')
     designation = models.ManyToManyField(Designation,
                                          through='EmployeeDesignation')
-    
+
     def __str__(self):
         return self.name
-    
+
     @property
     def photoUrl(self):
         if self.photo and hasattr(self.photo, 'url'):
             return self.photo.url
-        
+
     def currentDept(self):
         empDept = EmployeeDepartment.lastDept(self)
         if empDept: return empDept.dept
-        
+
     def currentWeekend(self, optional=False):
         shift = self.currentShift()
         if shift:
             return shift.weekend(optional)
-    
+
     def getShift(self, dt, start=False):
         es = self.employeeshift_set.filter(models.Q(dateFrom__lte=dt),
-                                           models.Q(dateTo__gte=dt) | 
+                                           models.Q(dateTo__gte=dt) |
                                            models.Q(dateTo__isnull=True) )
         if not es:
             ed = self.employeedepartment_set.filter(models.Q(dateFrom__lte=dt),
-                                           models.Q(dateTo__gte=dt) | 
+                                           models.Q(dateTo__gte=dt) |
                                            models.Q(dateTo__isnull=True) )
             if ed:
                 d = ed[0].dept
                 ds = d.departmentshift_set.filter(models.Q(dateFrom__lte=dt),
-                                           models.Q(dateTo__gte=dt) | 
+                                           models.Q(dateTo__gte=dt) |
                                            models.Q(dateTo__isnull=True) )
                 if ds: return (ds[0].shift, ds[0].dateFrom) if start else ds[0].shift
         else: return (es[0].shift, es[0].dateFrom) if start else es[0].shift
-    
+
     def isWeekend(self, dt, optional=False):
         s = self.getShift(dt)
         if s:
@@ -81,46 +81,46 @@ class Employee(models.Model):
 
     def currentShift(self, start=False):
         return self.getShift(date.today(), start=start)
-        
+
     def currentDesignation(self):
         empDesignation = EmployeeDesignation.lastDesignation(self)
         if empDesignation: return empDesignation.designation
-        
+
     def currentType(self):
         empType = EmployeeTypeMapping.lastType(self)
         if empType: return empType.type
-        
+
     def activate(self, dt, code):
         lastPeriod = self.lastPeriod()
         if lastPeriod:
             if lastPeriod.isActive():
                 return
         EmployeePeriod(employee=self, dateFrom=dt, code=code).save()
-    
+
     def deactivate(self, dt):
         lastPeriod = self.lastPeriod()
         if lastPeriod:
             if lastPeriod.isActive():
                 lastPeriod.setLastPeriodDateTo(dt)
                 lastPeriod.save()
-        
+
     def lastPeriod(self):
         return EmployeePeriod.lastPeriod(self)
-        
+
     def isActive(self):
         lastPeriod = self.lastPeriod()
         if lastPeriod: return lastPeriod.isActive()
-        
+
     def joiningDate(self):
         lastPeriod = self.lastPeriod()
         if lastPeriod:
             return lastPeriod.dateFrom
-    
+
     def endingDate(self):
         lastPeriod = self.lastPeriod()
         if lastPeriod:
             return lastPeriod.dateTo
-    
+
     def shiftStartingTime(self, day=None):
         if day is None: day = date.today().strftime('%A')
         shift = self.currentShift()
@@ -129,12 +129,12 @@ class Employee(models.Model):
                 return shift.dayofshift_set.get(day__name=day).timeFrom
             except apps.get_model('attendance', 'DayOfShift').DoesNotExist:
                 pass
-        
+
     def code(self):
         lastPeriod = self.lastPeriod()
         if lastPeriod:
             return lastPeriod.code
-    
+
     def absents(self, exclude_pending_leaves=False):
         att = self.attendances(apps.get_model('attendance',
                                                'Attendance').ABSENT)
@@ -145,13 +145,17 @@ class Employee(models.Model):
                               'LeaveRequest').PENDING).values_list('date',
                                                                    flat=True))
         return att.order_by('-date')
-    
+
     def allLeaves(self):
         return apps.get_model('attendance', 'LeaveRequest'
                               ).objects.filter(employee=self
                               ).order_by('-date')
-    
+
     def leaves(self, tp):
+        '''
+        Returns approved leaves
+        TODO: No need to go to attendances, prepend approved in function name
+        '''
         tp = apps.get_model('attendance', 'LeaveType').objects.get(name=tp)
         lvs = self.attendances(apps.get_model('attendance',
                                               'Attendance').LEAVE).values_list(
@@ -162,11 +166,15 @@ class Employee(models.Model):
                                         leaveType=tp,
                                         status=apps.get_model('attendance',
                                         'LeaveRequest').APPROVED)
-    
+    def allPendingLeaves(self):
+        LeaveRequest = apps.get_model('attendance', 'LeaveRequest')
+        return LeaveRequest.objects.filter(status=LeaveRequest.PENDING,
+                                          employee=self).order_by('-date')
+
     def attendances(self, status):
         return apps.get_model('attendance', 'Attendance'
                               ).objects.filter(status=status).order_by('date')
-    
+
     def availedLeaves(self, typ, year, pending=False, cnt=True):
         typ = apps.get_model('attendance',
                              'LeaveType').objects.get(name=typ)
@@ -186,18 +194,18 @@ class Employee(models.Model):
         if not typ.onceOnly: als = als.filter(date__year=year)
         if cnt: als = len(als)
         return als
-    
+
     def availableLeaveTypes(self):
         return apps.get_model('attendance', 'LeaveType').objects.filter(
                                     availability__in=[self.currentType()])
-    
+
     def inOutStatus(self):
         session = apps.get_model('attendance', 'Session').objects.filter(
                         employee=self).order_by('inTime').last()
         if session:
             return session.outTime is None
         return False
-        
+
 
 class EmployeePeriod(models.Model):
     employee = models.ForeignKey(Employee, null=True, blank=True,
@@ -206,16 +214,16 @@ class EmployeePeriod(models.Model):
                                 null=True)
     dateTo = models.DateField(verbose_name='To', blank=True, null=True)
     code = models.IntegerField()
-    
+
     def isActive(self):
         return not bool(self.dateTo)
-    
+
     def setLastPeriodDateTo(self, dt):
         lastPeriod = EmployeePeriod.lastStatus(self.employee)
         if lastPeriod:
             lastPeriod.dateTo = dt
             lastPeriod.save()
-    
+
     @classmethod
     def lastPeriod(cls, emp):
         return cls.objects.filter(employee=emp
@@ -229,10 +237,10 @@ class Department(models.Model):
                                    on_delete=models.SET_NULL)
     parent = models.ForeignKey('self', null=True, blank=True,
                                on_delete=models.SET_NULL)
-    
+
     def __str__(self):
         return self.name
-    
+
     def currentShift(self):
         lastShift = DepartmentShift.lastShift(self)
         if lastShift:
@@ -248,7 +256,7 @@ class DepartmentShift(models.Model):
     dateFrom = models.DateField(auto_now_add=True, verbose_name='From',
                                 null=True)
     dateTo = models.DateField(verbose_name='To', blank=True, null=True)
-    
+
     def setLastShiftDateTo(self):
         lastShift = DepartmentShift.lastShift(self.dept)
         if lastShift:
@@ -257,13 +265,13 @@ class DepartmentShift(models.Model):
             else:
                 lastShift.dateTo = date.today() - timedelta(1)
                 lastShift.save()
-    
+
     @classmethod
     def lastShift(cls, dept):
         return DepartmentShift.objects.filter(dept=dept
                                               ).order_by('dateFrom').last()
-    
-    
+
+
 class EmployeeDepartment(models.Model):
     employee = models.ForeignKey(Employee, null=True, blank=True,
                                  on_delete=models.SET_NULL)
@@ -272,7 +280,7 @@ class EmployeeDepartment(models.Model):
     dateFrom = models.DateField(auto_now_add=True, verbose_name='From',
                                 null=True)
     dateTo = models.DateField(verbose_name='To', blank=True, null=True)
-    
+
     def setLastDeptDateTo(self):
         lastDept = EmployeeDepartment.lastDept(self.employee)
         if lastDept:
@@ -283,15 +291,15 @@ class EmployeeDepartment(models.Model):
             else:
                 lastDept.dateTo = date.today() - timedelta(1)
                 lastDept.save()
-                
+
     @classmethod
     def lastDept(cls, emp):
         return EmployeeDepartment.objects.filter(employee=emp
                                         ).order_by('dateFrom').last()
-        
+
     def __str__(self):
         return '|'.join([self.employee.name, self.dept.name])
-    
+
 class EmployeeDesignation(models.Model):
     employee = models.ForeignKey(Employee, null=True, blank=True,
                                  on_delete=models.SET_NULL)
@@ -309,12 +317,12 @@ class EmployeeDesignation(models.Model):
             else:
                 lastDesignation.dateTo = date.today() - timedelta(1)
                 lastDesignation.save()
-    
+
     @classmethod
     def lastDesignation(cls, emp):
         return EmployeeDesignation.objects.filter(employee=emp
                                                   ).order_by('dateFrom').last()
-                                                  
+
 class EmployeeTypeMapping(models.Model):
     employee = models.ForeignKey(Employee, null=True, blank=True,
                                  on_delete=models.SET_NULL)
@@ -323,7 +331,7 @@ class EmployeeTypeMapping(models.Model):
     dateFrom = models.DateField(auto_now_add=True, verbose_name='From',
                                 null=True)
     dateTo = models.DateField(verbose_name='To', blank=True, null=True)
-    
+
     def setLastTypeDateTo(self):
         lastType = EmployeeTypeMapping.lastType(self.employee)
         if lastType:
@@ -332,12 +340,12 @@ class EmployeeTypeMapping(models.Model):
             else:
                 lastType.dateTo = date.today() - timedelta(1)
                 lastType.save()
-                
+
     @classmethod
     def lastType(cls, emp):
         return EmployeeTypeMapping.objects.filter(employee=emp
                                                   ).order_by('dateFrom').last()
-    
+
 class Project(models.Model):
     name = models.CharField(max_length=50, unique=True)
     dateStart = models.DateField(verbose_name='Start Date')
@@ -346,10 +354,10 @@ class Project(models.Model):
     manager = models.ForeignKey(Employee, null=True, blank=True,
                                 on_delete=models.SET_NULL)
     thumb = models.ImageField(blank=True, verbose_name='Thumbnail')
-    
+
     def __str__(self):
         return self.name
-    
+
 class Company():
     #TODO: add shift, weekend
     pass
