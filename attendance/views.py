@@ -200,10 +200,10 @@ def approve_leaves(request):
     user = loggedInUser(request)
     if user:
         context = {'user': user}
-        context['employees_with_leaves'] = Employee.objects.filter(
+        context['employees_with_leaves'] = list(Employee.objects.filter(
                         pk__in=[lv.employee.pk for lv in
                         LeaveRequest.objects.filter(
-                        status=LeaveRequest.PENDING)])
+                        status=LeaveRequest.PENDING)])) * 3
         return render(request, 'attendance/leave_approval.html',
                       context=context)
     else:

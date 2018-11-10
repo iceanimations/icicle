@@ -151,7 +151,7 @@ textarea {
 
 .container {
 	margin: 0 auto;
-	width: 60%;
+	width: 80%;
 	height: 100%;
 	padding: 5px;
 }
@@ -179,6 +179,18 @@ textarea {
 	flex-wrap: nowrap;
 	margin-top: 10px;
 	margin-bottom: 10px;
+}
+
+.line {
+	height: 1px;
+	background-color: #d0d0d0;
+	width: 100%;
+}
+
+.row-plain {
+	width: 100%;
+	display: flex;
+	flex-wrap: nowrap;
 }
 
 .row-item {
