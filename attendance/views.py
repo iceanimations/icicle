@@ -204,7 +204,11 @@ def approve_leaves(request):
                         pk__in=[lv.employee.pk for lv in
                         LeaveRequest.objects.filter(
                         status=LeaveRequest.PENDING)])) * 3
-        return render(request, 'attendance/leave_approval.html',
-                      context=context)
+        if request.method == 'GET':
+            return render(request, 'attendance/leave_approval.html',
+                          context=context)
+        else:
+            print(request.POST.get('approve_reject'))
+            return redirect('/attendance/approve/')
     else:
         return redirect('/login')

@@ -9,35 +9,48 @@
 		<div class="row-simple">
 			<div class="col-12 text-center theme-color font-x-large"><b>Leave Requests</b></div>
 		</div>
-		{% for emp in employees_with_leaves %}
-		<div class="row-simple">
-			<div class="col-12 box">
-				<div class="row-plain theme-color">
-					<div class="col-4">
-						<input type="checkbox" />
-						<span class="font-small">Select All</span>
-					</div>
-					<div class="col-4 text-center">
-						<b>{{ emp.name }}</b>
-					</div>
-					<div class="col-4"></div>
-				</div>
-				{% for lv in emp.allPendingLeaves %}
-					{% if forloop.counter > 1 %}
-						<div class="row-plain">
-							<div class="line"></div>
-						</div>
-					{% endif %}
-					<div class="row-simple">
-						<div class="col-12">
-							<input type="checkbox" value="{{ lv.date|date:"Y-m-d" }}" />
-							<b>{{ lv.date|date:"Y-m-d" }}</b>
-						</div>
-					</div>
-				{% endfor %}
+		<form method="post">
+			{% csrf_token %}
+			<div class="row-simple">
+				<input type="submit" name="approve_reject" value="Approve" class="col-6" />
+				<input type="submit" name="approve_reject" value="Reject" class="col-6" />
 			</div>
-		</div>
-		{% endfor %}
+			<div class="row-simple">
+				<textarea rows="3" placeholder="Remarks" class="col-12"></textarea>
+			</div>
+			{% for emp in employees_with_leaves %}
+			<div class="row-simple">
+				<div class="col-12 box">
+					<div class="row-plain theme-color">
+						<div class="col-4">
+							<input type="checkbox" />
+							<span class="font-small">Select All</span>
+						</div>
+						<div class="col-4 text-center">
+							<b>{{ emp.name }}</b>
+						</div>
+						<div class="col-4"></div>
+					</div>
+					{% for lv in emp.allPendingLeaves %}
+						{% if forloop.counter > 1 %}
+							<div class="row-plain">
+								<div class="line"></div>
+							</div>
+						{% endif %}
+						<div class="row-simple">
+							<div class="col-6">
+								<input type="checkbox" value="{{ lv.pk }}" />
+								<b>{{ lv.date|date:"Y-m-d" }}</b>
+							</div>
+							<div class="col-6 text-right font-small">
+								<i>{{ lv.leaveType }}</i>
+							</div>
+						</div>
+					{% endfor %}
+				</div>
+			</div>
+			{% endfor %}
+		</form>
 	</div>
 	<!-- Absents -->
 	<div class="col-6 simple-container">
