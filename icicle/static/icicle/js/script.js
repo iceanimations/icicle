@@ -1,16 +1,8 @@
-function toggleDisplay(btn, jd, ed, code) {
-	btn = document.getElementById(btn);
-	jd = document.getElementById(jd);
-	ed = document.getElementById(ed);
-	code = document.getElementById(code);
-	if (btn.checked == true) {
-		jd.style = jd.style + ";display: block;";
-		ed.style = ed.style + ";display: none;";
-		code.style = code.style + ";display: block";
-	}
-	else {
-		jd.style = jd.style + ";display: none;";
-		ed.style = ed.style + ";display: block;";
-		code.style = code.style + ";display: none";
-	}
+function selectAll(source) {
+  checkboxes = document.getElementsByName('leaves');
+  for(var i=0, n=checkboxes.length;i<n;i++) {
+	  if (checkboxes[i].dataset.employeeid == source.dataset.employeeid) {
+	  	checkboxes[i].checked = source.checked;
+  	}
+  }
 }

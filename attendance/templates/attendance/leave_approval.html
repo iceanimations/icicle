@@ -2,12 +2,15 @@
 {% block title %} | Leave Approval {% endblock %}
 {% block content %}
 
-{% if user %} <!-- add if user.isAdmin -->
+{% if user %}
+<!-- add if user.isAdmin -->
 <div class="row-simple">
 	<!-- Leave Requests -->
 	<div class="col-6 simple-container">
 		<div class="row-simple">
-			<div class="col-12 text-center theme-color font-x-large"><b>Leave Requests</b></div>
+			<div class="col-12 text-center theme-color font-x-large">
+				<b>Leave Requests</b>
+			</div>
 		</div>
 		<form method="post">
 			{% csrf_token %}
@@ -16,14 +19,21 @@
 				<input type="submit" name="approve_reject" value="Reject" class="col-6" />
 			</div>
 			<div class="row-simple">
-				<textarea rows="3" placeholder="Remarks" class="col-12"></textarea>
+				<textarea name="remarks" rows="3" placeholder="Remarks" class="col-12">{{ remarks }}</textarea>
 			</div>
+			{% if errors %}
+				<div class="row-simple box">
+					<div class="col-12 red">
+						{{ errors.0 }}
+					</div>
+				</div>
+			{% endif %}
 			{% for emp in employees_with_leaves %}
 			<div class="row-simple">
 				<div class="col-12 box">
 					<div class="row-plain theme-color">
 						<div class="col-4">
-							<input type="checkbox" />
+							<input type="checkbox" data-employeeid="{{ emp.pk }}" onclick="selectAll(this)"/>
 							<span class="font-small">Select All</span>
 						</div>
 						<div class="col-4 text-center">
@@ -32,20 +42,24 @@
 						<div class="col-4"></div>
 					</div>
 					{% for lv in emp.allPendingLeaves %}
-						{% if forloop.counter > 1 %}
-							<div class="row-plain">
-								<div class="line"></div>
-							</div>
-						{% endif %}
-						<div class="row-simple">
-							<div class="col-6">
-								<input type="checkbox" value="{{ lv.pk }}" />
-								<b>{{ lv.date|date:"Y-m-d" }}</b>
-							</div>
-							<div class="col-6 text-right font-small">
-								<i>{{ lv.leaveType }}</i>
-							</div>
+					{% if forloop.counter > 1 %}
+					<div class="row-plain">
+						<div class="line"></div>
+					</div>
+					{% endif %}
+					<div class="row-simple">
+						<div class="col-6">
+							{% if lv.pk in selected_leaves %}
+								<input type="checkbox" checked data-employeeid="{{ emp.pk }}" value="{{ lv.pk }}" name="leaves" />
+							{% else %}
+								<input type="checkbox" value="{{ lv.pk }}" name="leaves" data-employeeid="{{ emp.pk }}" />
+							{% endif %}
+							<b>{{ lv.date|date:"Y-m-d" }}</b>
 						</div>
+						<div class="col-6 text-right font-small">
+							<i>{{ lv.leaveType }}</i>
+						</div>
+					</div>
 					{% endfor %}
 				</div>
 			</div>
@@ -55,7 +69,9 @@
 	<!-- Absents -->
 	<div class="col-6 simple-container">
 		<div class="row-simple">
-			<div class="col-12 text-center theme-color font-x-large"><b>Absents</b></div>
+			<div class="col-12 text-center theme-color font-x-large">
+				<b>Absents</b>
+			</div>
 		</div>
 		{% for emp in employees_with_leaves %}
 		<div class="row-simple">
@@ -71,17 +87,17 @@
 					<div class="col-4"></div>
 				</div>
 				{% for lv in emp.allPendingLeaves %}
-					{% if forloop.counter > 1 %}
-						<div class="row-plain">
-							<div class="line"></div>
-						</div>
-					{% endif %}
-					<div class="row-simple">
-						<div class="col-12">
-							<input type="checkbox" value="{{ lv.date|date:"Y-m-d" }}" />
-							<b>{{ lv.date|date:"Y-m-d" }}</b>
-						</div>
+				{% if forloop.counter > 1 %}
+				<div class="row-plain">
+					<div class="line"></div>
+				</div>
+				{% endif %}
+				<div class="row-simple">
+					<div class="col-12">
+						<input type="checkbox" value="{{ lv.date|date:"Y-m-d" }}" />
+						<b>{{ lv.date|date:"Y-m-d" }}</b>
 					</div>
+				</div>
 				{% endfor %}
 			</div>
 		</div>

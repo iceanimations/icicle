@@ -120,7 +120,6 @@ def advance_leave(request):
             dateTo = request.POST.get('dateTo')
             desc = request.POST.get('description')
             leaveType = int(request.POST.get('leaveType'))
-            print ('Type:', type(dateFrom))
             if dateFrom and dateTo:
                 dateFrom = date.fromisoformat(dateFrom)
                 dateTo = date.fromisoformat(dateTo)
@@ -203,12 +202,33 @@ def approve_leaves(request):
         context['employees_with_leaves'] = list(Employee.objects.filter(
                         pk__in=[lv.employee.pk for lv in
                         LeaveRequest.objects.filter(
-                        status=LeaveRequest.PENDING)])) * 3
+                        status=LeaveRequest.PENDING)]))
         if request.method == 'GET':
             return render(request, 'attendance/leave_approval.html',
                           context=context)
         else:
-            print(request.POST.get('approve_reject'))
-            return redirect('/attendance/approve/')
+            errors = []
+            ar = request.POST.get('approve_reject')
+            lvs = request.POST.getlist('leaves')
+            remarks = request.POST.get('remarks')
+            context['remarks'] = remarks
+            if lvs:
+                context['selected_leaves'] = [int(lv) for lv in lvs]
+                print (context['selected_leaves'])
+                if ar == 'Approve':
+                    pass
+                elif ar == 'Reject':
+                    if remarks:
+                        pass
+                    else:
+                        errors.append('Remarks not added')
+                else:
+                    pass
+            else:
+                errors.append('No leave selected')
+            if errors:
+                context['errors'] = errors
+            return render(request, 'attendance/leave_approval.html',
+                        context=context)
     else:
         return redirect('/login')
