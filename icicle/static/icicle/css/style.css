@@ -57,6 +57,18 @@ body {
 	background-color: red;
 }
 
+.gray-back {
+	background-color: gray;
+}
+
+.light-gray-back {
+	background-color: lightGray;
+}
+
+.light-gray-border {
+	border-color: lightGray;
+}
+
 form input[type=text], form input[type=password],
 form input[type=submit], form input[type=date], form select, textarea{
 	background-color: white;
@@ -164,6 +176,12 @@ textarea {
 	border-top: solid 2px #0070a0;
 }
 
+.box-simple {
+	background-color: white;
+	color: #0070a0;
+	border-top: solid 1px #0070a0;
+}
+
 
 .row {
 	width: 100%;
@@ -177,14 +195,21 @@ textarea {
 	width: 100%;
 	display: flex;
 	flex-wrap: nowrap;
-	margin-top: 10px;
-	margin-bottom: 10px;
+	margin-top: 6px;
+	margin-bottom: 6px;
 }
 
 .line {
 	height: 1px;
-	background-color: #d0d0d0;
 	width: 100%;
+}
+
+.vline-left {
+	border-left: solid 1px;
+}
+
+.vline-right {
+	border-right: solid 1px;
 }
 
 .row-plain {

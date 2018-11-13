@@ -84,6 +84,10 @@ def attendance(request):
                                                    pending=True) > lt.quota:
                     errors.append('Number of leaves requested exceededs the'+
                                   ' allowed quota for selected leave type')
+            for dt in dates:
+                if not request.POST.get(dt):
+                    errors.append('Description not added for "%s"'%dt)
+                    break
             if errors:
                 data = {'descriptions': []}
                 if lt: data['selected_lt'] = lt.pk
@@ -92,7 +96,6 @@ def attendance(request):
                 for dt in user.absents(exclude_pending_leaves=True
                                        ).filter(date__year=year):
                     dtf = dt.date.strftime('%Y-%m-%d')
-                    #TODO: this is not working, fix it
                     data['descriptions'].append(request.POST.get(dtf, ''))
                 return listAttendance(request, errors, data)
             for _dt in dates:
@@ -211,15 +214,15 @@ def approve_leaves(request):
             ar = request.POST.get('approve_reject')
             lvs = request.POST.getlist('leaves')
             remarks = request.POST.get('remarks')
-            context['remarks'] = remarks
             if lvs:
-                context['selected_leaves'] = [int(lv) for lv in lvs]
-                print (context['selected_leaves'])
+                lvs = [int(lv) for lv in lvs]
+                context['selected_leaves'] = lvs
+                lvs = LeaveRequest.objects.filter(pk__in=lvs)
                 if ar == 'Approve':
-                    pass
+                    for lv in lvs: lv.approve(user, remarks)
                 elif ar == 'Reject':
                     if remarks:
-                        pass
+                        for lv in lvs: lv.reject(user, remarks)
                     else:
                         errors.append('Remarks not added')
                 else:
@@ -227,6 +230,7 @@ def approve_leaves(request):
             else:
                 errors.append('No leave selected')
             if errors:
+                context['remarks'] = remarks
                 context['errors'] = errors
             return render(request, 'attendance/leave_approval.html',
                         context=context)

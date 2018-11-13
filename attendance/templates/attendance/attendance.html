@@ -21,7 +21,7 @@
 			<div class="col-4"></div>
 		</div>
 	</form>
-	
+
 	<div class="col-4 text-right"><a href="advance/">Apply for advance leaves</a></div>
 </div>
 <!-- errors -->
@@ -133,6 +133,26 @@
 								</i>
 							</div>
 						</div>
+						<div class="row-plain">
+							<div class="font-x-small text-center col-12 gray">Description</div>
+						</div>
+						<div class="line light-gray-back"></div>
+						<div class="row-plain">
+							<div class="col-12 font-x-small gray">
+								<i>{{ lv.description }}</i>
+							</div>
+						</div>
+						{% if lv.remarks %}
+							<div class="row-plain">
+								<div class="font-x-small gray text-center col-12">Remarks</div>
+							</div>
+							<div class="line light-gray-back"></div>
+							<div class="row-plain">
+								<div class="col-12 font-x-small gray">
+									<i>{{ lv.remarks }}</i>
+								</div>
+							</div>
+						{% endif %}
 					</div>
 				</div>
 			{% endfor %}

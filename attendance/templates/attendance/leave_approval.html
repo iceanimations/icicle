@@ -29,40 +29,52 @@
 				</div>
 			{% endif %}
 			{% for emp in employees_with_leaves %}
-			<div class="row-simple">
-				<div class="col-12 box">
-					<div class="row-plain theme-color">
-						<div class="col-4">
-							<input type="checkbox" data-employeeid="{{ emp.pk }}" onclick="selectAll(this)"/>
-							<span class="font-small">Select All</span>
+			{% if emp.allPendingLeaves %}
+				<div class="row-simple">
+					<div class="col-12">
+						<div class="row-plain theme-color">
+							<div class="col-4">
+								<input type="checkbox" data-employeeid="{{ emp.pk }}" onclick="selectAll(this)"/>
+								<span class="font-small">Select All</span>
+							</div>
+							<div class="col-4 text-center">
+								<b>{{ emp.name }}</b>
+							</div>
+							<div class="col-4"></div>
 						</div>
-						<div class="col-4 text-center">
-							<b>{{ emp.name }}</b>
+						{% for lv in emp.allPendingLeaves %}
+						<div class="row-simple box">
+							<div class="col-12">
+								<div class="row-simple">
+									<div class="col-6">
+										{% if lv.pk in selected_leaves %}
+											<input type="checkbox" checked data-employeeid="{{ emp.pk }}" value="{{ lv.pk }}" name="leaves" />
+										{% else %}
+											<input type="checkbox" value="{{ lv.pk }}" name="leaves" data-employeeid="{{ emp.pk }}" />
+										{% endif %}
+										<b>{{ lv.date|date:"Y-m-d" }}</b>
+									</div>
+									<div class="col-6 text-right font-small">
+										<i>{{ lv.leaveType }}</i>
+									</div>
+								</div>
+								<div class="row-plain">
+									<div class="text-center col-12 gray font-x-small">
+										Description
+									</div>
+								</div>
+								<div class="line light-gray-back"></div>
+								<div class="row-plain">
+										<div class="col-12 font-x-small gray">
+											<i>{{ lv.description }}</i>
+										</div>
+								</div>
+							</div>
 						</div>
-						<div class="col-4"></div>
+						{% endfor %}
 					</div>
-					{% for lv in emp.allPendingLeaves %}
-					{% if forloop.counter > 1 %}
-					<div class="row-plain">
-						<div class="line"></div>
-					</div>
-					{% endif %}
-					<div class="row-simple">
-						<div class="col-6">
-							{% if lv.pk in selected_leaves %}
-								<input type="checkbox" checked data-employeeid="{{ emp.pk }}" value="{{ lv.pk }}" name="leaves" />
-							{% else %}
-								<input type="checkbox" value="{{ lv.pk }}" name="leaves" data-employeeid="{{ emp.pk }}" />
-							{% endif %}
-							<b>{{ lv.date|date:"Y-m-d" }}</b>
-						</div>
-						<div class="col-6 text-right font-small">
-							<i>{{ lv.leaveType }}</i>
-						</div>
-					</div>
-					{% endfor %}
 				</div>
-			</div>
+			{% endif %}
 			{% endfor %}
 		</form>
 	</div>

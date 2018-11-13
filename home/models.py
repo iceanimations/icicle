@@ -173,7 +173,8 @@ class Employee(models.Model):
 
     def attendances(self, status):
         return apps.get_model('attendance', 'Attendance'
-                              ).objects.filter(status=status).order_by('date')
+                              ).objects.filter(employee=self,
+                              status=status).order_by('date')
 
     def availedLeaves(self, typ, year, pending=False, cnt=True):
         typ = apps.get_model('attendance',

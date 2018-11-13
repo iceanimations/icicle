@@ -8,7 +8,7 @@ from icicle import utilities as utils
 from datetime import datetime, timedelta
 
 class UtilitiesTestCase(TestCase):
-    
+
     def _test_timer_creation(self):
         now = datetime.now().replace(microsecond=0) + timedelta(minutes=1)
         utils.createTimer(self.hello, now.time())
@@ -16,5 +16,4 @@ class UtilitiesTestCase(TestCase):
 
 
     def hello(self):
-        print('hello world')
-        print (datetime.now().time())
+        pass

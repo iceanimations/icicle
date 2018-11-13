@@ -27,7 +27,7 @@ class AttendanceCrossingDateTestCase(TestCase):
         es = models.EmployeeShift.objects.create(employee=e, shift=s)
         es.dateFrom = date(2018, 9, 26)
         es.save()
-    
+
     def create_in(self, **kwargs):
         dt = datetime(2018, 9, 26, 21) + timedelta(**kwargs)
         models.Entry(uid=9600242, tid=1, date=dt.date(), time=dt.time()).save()
@@ -35,7 +35,7 @@ class AttendanceCrossingDateTestCase(TestCase):
     def create_out(self, **kwargs):
         dt = datetime(2018, 9, 26, 21) + timedelta(**kwargs)
         models.Entry(uid=9600242, tid=2, date=dt.date(), time=dt.time()).save()
-    
+
     def test_shift_time_range(self):
         self.create_in(hours=2)
         self.create_out(hours=8)
@@ -49,7 +49,7 @@ class AttendanceCrossingDateTestCase(TestCase):
         self.assertEqual(s.timeRange(settings.localize(datetime(2018, 9, 26, 23, 0))),
                          (settings.localize(datetime(2018, 9, 26, 22, 0)),
                           settings.localize(datetime(2018, 9, 27, 6, 0))))
-        
+
 
 class AttendanceTestCase(TestCase):
     @classmethod
@@ -72,7 +72,7 @@ class AttendanceTestCase(TestCase):
         es = models.EmployeeShift.objects.create(employee=e, shift=s)
         es.dateFrom = date(2018, 9, 26)
         es.save()
-        
+
         models.Holiday.objects.create(name='Test', date=date(2018, 10, 1))
         empType = home_models.EmployeeType(type='Permanent')
         empType.save()
@@ -93,7 +93,7 @@ class AttendanceTestCase(TestCase):
     def create_out(self, **kwargs):
         dt = datetime(2018, 9, 26, 9) + timedelta(**kwargs)
         models.Entry(uid=9600242, tid=2, date=dt.date(), time=dt.time()).save()
-    
+
     # tests for Entry and Session
     def test_out_is_null(self):
         self.create_in()
@@ -133,7 +133,7 @@ class AttendanceTestCase(TestCase):
         self.assertTrue(s.last().outTime is None)
         # test if the duration between first out and second in is 1 sec
         self.assertEqual(s.last().inTime - s.first().outTime, timedelta(seconds=1))
-        
+
     def test_consecutive_outs(self):
         self.create_in()
         self.create_out(hours=1)
@@ -145,7 +145,7 @@ class AttendanceTestCase(TestCase):
         self.assertEqual(len(s), 2)
         # test if the last session is 1 second long
         self.assertEqual(s.last().outTime - s.last().inTime, timedelta(seconds=1))
-        
+
     def test_in_between_session(self):
         duration = 1
         self.create_in()
@@ -160,7 +160,7 @@ class AttendanceTestCase(TestCase):
         self.assertEqual(s.last().inTime - s.first().outTime, timedelta(seconds=1))
         # test if first out is computed
         self.assertEqual(s.first().outType, models.Session.COMPUTED)
-        
+
     def test_out_between_session(self):
         self.create_in()
         self.create_out(hours=1)
@@ -172,7 +172,7 @@ class AttendanceTestCase(TestCase):
         # test if first out is Biometric and second in is computed
         self.assertEqual(s.first().outType, models.Session.BIOMETRIC)
         self.assertEqual(s.last().inType, models.Session.COMPUTED)
-        
+
     def test_out_before_in(self):
         self.create_out(hours=1)
         self.create_in()
@@ -182,7 +182,7 @@ class AttendanceTestCase(TestCase):
         self.assertEqual(len(s), 1)
         # test if session is 1 hour long
         self.assertEqual(s[0].outTime - s[0].inTime, timedelta(hours=1))
-    
+
     def test_days_long_session(self):
         self.create_in()
         self.create_out(days=10)
@@ -200,13 +200,13 @@ class AttendanceTestCase(TestCase):
         self.create_out(hours=2)
         a = models.Attendance.objects2.all()
         self.assertEqual(len(a), 1)
-    
+
     def test_in_after_endtime(self):
         self.create_in(hours=11)
         self.create_out(hours=12)
         a = models.Attendance.objects2.all()
         self.assertEqual(len(a), 0)
-    
+
     def test_days_long_attendance(self):
         self.create_in(hours=2)
         self.create_out(days=10)
@@ -214,14 +214,14 @@ class AttendanceTestCase(TestCase):
         self.assertEqual(len(a), 2)
         self.assertEqual(a.first().date, date(2018, 9, 26))
         self.assertEqual(a.last().date, date(2018, 10, 5))
-        
+
     def test_consecutive_attendance_ins(self):
         self.create_in()
         self.create_in(days=1)
         self.create_out(days=1, hours=11)
         a = models.Attendance.objects2.all()
         self.assertEqual(len(a), 2)
-        
+
     def test_in_between_days_long_out(self):
         self.create_in()
         self.create_in(days=5)
@@ -229,7 +229,7 @@ class AttendanceTestCase(TestCase):
         self.create_out(days=10)
         a = models.Attendance.objects2.all()
         self.assertEqual(len(a), 4)
-        
+
     def markAttendances(self):
         for day in range(5):
             self.create_in(days=day, hours=2)
@@ -246,7 +246,7 @@ class AttendanceTestCase(TestCase):
         e = home_models.Employee.objects.get(username='qurban.ali')
         missingDays = (date.today() - date(2018, 9, 26)).days - 6
         self.assertEqual(len(models.Attendance.missingAttendances(e)), missingDays)
-    
+
     def test_markMissingAttendances(self):
         self.markAttendances()
         self.assertEqual(len(models.Attendance.objects2.all()), 6)
@@ -270,7 +270,7 @@ class AttendanceTestCase(TestCase):
             self.assertEqual(att.status, models.Attendance.ABSENT)
         self.assertEqual(models.Attendance.objects.get(date=date(2018, 10, 1)).status,
                          models.Attendance.HOLIDAY)
-        
+
     # tests for Shift
     def test_shift_isWeekend(self):
         e = home_models.Employee.objects.get(username='qurban.ali')
@@ -278,13 +278,13 @@ class AttendanceTestCase(TestCase):
         self.assertTrue(e.currentShift().isWeekend(date(2018, 10, 6), optional=True))
         self.assertTrue(e.currentShift().isWeekend(date(2018, 10, 7)))
         self.assertFalse(e.currentShift().isWeekend(date(2018, 10, 8)))
-        
+
     def test_employee_getShift(self):
         e = home_models.Employee.objects.get(username='qurban.ali')
         self.assertIsNone(e.getShift(date(2018, 9, 20)))
         s = models.Shift.objects.get(name='Normal')
         self.assertEqual(e.currentShift(), s)
-    
+
     # LeaveRequest
     def test_leaveRequest(self):
         self.markAttendances()

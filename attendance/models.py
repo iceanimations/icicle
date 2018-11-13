@@ -93,10 +93,11 @@ class Attendance(models.Model):
                                         ).filter(employee=emp
                                         ).order_by('date')
 
+        dates = { start + timedelta(day)
+            for day in range((date.today() - start).days) }
         if attendances:
-            dates = { start + timedelta(day)
-                     for day in range((date.today() - attendances[0]).days) }
             return list(dates.difference(set(attendances)))
+        return list(dates)
 
     @classmethod
     def markAttendance(cls, employee, status, dt):
